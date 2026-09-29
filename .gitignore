@@ -1,0 +1,22 @@
+# Entorno virtual
+venv/
+.venv/
+
+# Variables de entorno (contienen contraseñas)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Archivos generados
+media/
+staticfiles/
+.coverage
+htmlcov/
+
+# Editores y sistema
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
