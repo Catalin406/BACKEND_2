@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   USUARIOS/USUARIO_DETALLE.HTML / FICHA DEL USUARIO
+   Datos personales y, si es estudiante, su carro persistido y sus
+   matrículas.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}{{ usuario_obj.username }}{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item"><a href="{% url 'panel_usuarios' %}">Usuarios</a></li>
+<li class="breadcrumb-item active" aria-current="page">{{ usuario_obj.username }}</li>
+{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-person-circle text-principal"></i> {{ usuario_obj.nombre_completo }}{% endblock %}
+{% block subtitulo %}{{ usuario_obj.get_rol_display }} · {% if usuario_obj.is_active %}<span class="badge-suave badge-activo">Activo</span>{% else %}<span class="badge-suave badge-inactivo">Inactivo</span>{% endif %}{% endblock %}
+{% block acciones %}
+<a href="{% url 'panel_usuario_editar' usuario_obj.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
+{% if usuario_obj.is_active %}
+<a href="{% url 'panel_usuario_desactivar' usuario_obj.pk %}" class="btn btn-peligro"><i class="bi bi-person-slash"></i> Desactivar</a>
+{% else %}
+<a href="{% url 'panel_usuario_reactivar' usuario_obj.pk %}" class="btn btn-exito"><i class="bi bi-arrow-counterclockwise"></i> Reactivar</a>
+{% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="row g-4">
+    {# ===== DATOS PERSONALES ===== #}
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-person-vcard"></i> Datos</div>
+            <div class="card-body">
+                <dl class="mb-0 small">
+                    <dt>Usuario</dt><dd>{{ usuario_obj.username }}</dd>
+                    <dt>Correo electrónico</dt><dd>{{ usuario_obj.email }}</dd>
+                    <dt>RUT</dt><dd>{{ usuario_obj.rut|default:"—" }}</dd>
+                    <dt>Teléfono</dt><dd>{{ usuario_obj.telefono|default:"—" }}</dd>
+                    <dt>Registrado</dt><dd>{{ usuario_obj.date_joined|date:"d-m-Y H:i" }}</dd>
+                    <dt>Último acceso a la API</dt><dd class="mb-0">{{ usuario_obj.last_login|date:"d-m-Y H:i"|default:"Nunca" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {% if usuario_obj.es_estudiante %}
+    <div class="col-lg-8">
+        {# ===== CARRO PERSISTIDO ===== #}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-cart3"></i> Carro de matrícula ({{ carro.cantidad_cursos }})</span>
+                <a href="{% url 'panel_carros' %}?estudiante={{ usuario_obj.pk }}" class="btn btn-primary btn-sm">Gestionar carro</a>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for item in carro.items_activos %}
+                <li class="list-group-item d-flex justify-content-between"><span>{{ item.curso.titulo }}</span><span class="fw-bold">{{ item.curso.costo_matricula|clp }}</span></li>
+                {% empty %}
+                <li class="list-group-item text-suave">El carro está vacío.</li>
+                {% endfor %}
+            </ul>
+            <div class="card-footer d-flex justify-content-between fw-bold bg-secundario-suave"><span>Total</span><span>{{ carro.total|clp }}</span></div>
+        </div>
+
+        {# ===== MATRÍCULAS ===== #}
+        <div class="card">
+            <div class="card-header"><i class="bi bi-receipt"></i> Matrículas</div>
+            {% if matriculas %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead><tr><th>Código</th><th>Estado</th><th>Creada</th><th class="text-end">Total</th></tr></thead>
+                    <tbody>
+                    {% for m in matriculas %}
+                        <tr>
+                            <td><a href="{% url 'panel_matricula_detalle' m.pk %}" class="codigo-uuid">{{ m.codigo|truncatechars:13 }}</a></td>
+                            <td><span class="{{ m.estado|clase_estado }}">{{ m.get_estado_display }}</span></td>
+                            <td>{{ m.creada_en|date:"d-m-Y H:i" }}</td>
+                            <td class="text-end fw-bold">{{ m.total|clp }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            {% include "parciales/estado_vacio.html" with icono="bi-receipt" mensaje="Este estudiante aún no tiene matrículas." %}
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="col-lg-8">
+        <div class="card h-100"><div class="card-body d-flex align-items-center gap-3">
+            <span class="icono-modulo"><i class="bi bi-person-badge"></i></span>
+            <p class="mb-0">Como <strong>Coordinador Académico</strong>, este usuario administra áreas, cursos y estados de matrícula desde la API con su token JWT.</p>
+        </div></div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

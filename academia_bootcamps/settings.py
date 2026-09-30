@@ -232,6 +232,12 @@ API REST de la plataforma de reservas de cursos y bootcamps **{NOMBRE_COMERCIAL}
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SWAGGER_UI_SETTINGS": {"persistAuthorization": True},
+    "ENUM_NAME_OVERRIDES": {
+        "EstadoMatriculaEnum": "matriculas.models.EstadoMatricula",
+        "RolEnum": "usuarios.models.Rol",
+        "TipoCursoEnum": "cursos.models.TipoCurso",
+        "ModalidadEnum": "cursos.models.Modalidad",
+    },
     "CONTACT": {"name": f"{ALUMNO_NOMBRE} · {ALUMNO_SECCION}"},
     "TAGS": [
         {"name": "Autenticación", "description": "Registro, login JWT con claims de rol, refresh, logout y perfil."},

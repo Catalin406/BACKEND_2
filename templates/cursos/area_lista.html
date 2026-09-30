@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% comment %} ============================================================
+   CURSOS/AREA_LISTA.HTML / LISTADO DE ÁREAS (PANEL)
+   Buscador, filtro activos/inactivos, acciones de ver, editar,
+   desactivar y reactivar.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Áreas de conocimiento{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item active" aria-current="page">Áreas</li>
+{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-diagram-3 text-principal"></i> Áreas de conocimiento{% endblock %}
+{% block subtitulo %}Agrupan los cursos de la oferta académica.{% endblock %}
+{% block acciones %}<a href="{% url 'panel_area_crear' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva área</a>{% endblock %}
+
+{% block contenido %}
+{# ===== FILTROS ===== #}
+<form method="get" class="panel-filtros p-3 mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-12 col-md">
+            <label class="form-label small" for="id_q">Buscar</label>
+            <input type="search" name="q" id="id_q" value="{{ q }}" class="form-control form-control-sm" placeholder="Nombre o descripción">
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small" for="id_estado">Mostrar</label>
+            <select name="estado" id="id_estado" class="form-select form-select-sm">
+                <option value="activos" {% if estado == 'activos' %}selected{% endif %}>Solo activas</option>
+                <option value="inactivos" {% if estado == 'inactivos' %}selected{% endif %}>Solo inactivas</option>
+                <option value="todos" {% if estado == 'todos' %}selected{% endif %}>Todas</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-auto d-flex gap-2">
+            <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-search"></i> Filtrar</button>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'panel_areas' %}">Limpiar</a>
+        </div>
+    </div>
+</form>
+
+{# ===== TABLA ===== #}
+<div class="card">
+    {% if pagina.object_list %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Área</th><th>Descripción</th><th class="text-center">Cursos activos</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+            <tbody>
+            {% for area in pagina %}
+                <tr>
+                    <td><div class="d-flex align-items-center gap-2"><span class="icono-area"><i class="bi {{ area.icono_css }}"></i></span><a href="{% url 'panel_area_detalle' area.pk %}" class="fw-bold text-reset">{{ area.nombre }}</a></div></td>
+                    <td class="small text-suave">{{ area.descripcion|truncatechars:80 }}</td>
+                    <td class="text-center">{{ area.n_cursos }}</td>
+                    <td>{% if area.activo %}<span class="badge-suave badge-activo">Activa</span>{% else %}<span class="badge-suave badge-inactivo">Inactiva</span>{% endif %}</td>
+                    <td class="text-end text-nowrap">
+                        <a href="{% url 'panel_area_detalle' area.pk %}" class="btn btn-outline-secondary btn-sm" title="Ver"><i class="bi bi-eye"></i></a>
+                        <a href="{% url 'panel_area_editar' area.pk %}" class="btn btn-outline-primary btn-sm" title="Editar"><i class="bi bi-pencil"></i></a>
+                        {% if area.activo %}
+                        <a href="{% url 'panel_area_desactivar' area.pk %}" class="btn btn-peligro btn-sm" title="Desactivar"><i class="bi bi-slash-circle"></i></a>
+                        {% else %}
+                        <a href="{% url 'panel_area_reactivar' area.pk %}" class="btn btn-exito btn-sm" title="Reactivar"><i class="bi bi-arrow-counterclockwise"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    {% url 'panel_area_crear' as url_nueva %}
+    {% include "parciales/estado_vacio.html" with icono="bi-diagram-3" mensaje="No hay áreas que coincidan con el filtro." url=url_nueva texto_boton="Crear área" %}
+    {% endif %}
+</div>
+{% include "parciales/paginacion.html" %}
+{% endblock %}

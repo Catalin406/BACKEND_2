@@ -1,0 +1,33 @@
+{% extends "drf_spectacular/swagger_ui.html" %}
+{% load static %}
+{% comment %} ============================================================
+   DRF_SPECTACULAR/SWAGGER_UI.HTML / SWAGGER UI CON IDENTIDAD DEL SITIO
+   Extiende la plantilla original de drf-spectacular (mismo nombre,
+   distinto directorio) para agregar el favicon, la franja superior
+   con enlaces del sitio y el footer con los datos de la alumna.
+   ============================================================ {% endcomment %}
+
+{% block head %}
+{{ block.super }}
+<link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap">
+<link rel="stylesheet" href="{% static 'css/tema.css' %}">
+<style>
+    body { background: var(--color-fondo); }
+    .franja-api { background: var(--color-superficie); border-bottom: 3px solid var(--color-principal); font-family: var(--fuente-base); padding: 0.7rem 1.2rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; }
+    .franja-api a { color: var(--color-acento-oscuro); font-weight: 700; margin-left: 1rem; }
+    .franja-api strong { color: var(--color-texto); }
+</style>
+{% endblock %}
+
+{% block body %}
+{# ===== FRANJA SUPERIOR ===== #}
+<div class="franja-api">
+    <strong>{{ NOMBRE_COMERCIAL }} · API REST</strong>
+    <nav><a href="/">Inicio</a><a href="/documentacion/">Documentación</a><a href="/api/redoc/">ReDoc</a><a href="/api/">Raíz de la API</a></nav>
+</div>
+{# ===== SWAGGER UI ORIGINAL ===== #}
+{{ block.super }}
+{# ===== FOOTER ===== #}
+{% include "parciales/footer.html" %}
+{% endblock %}

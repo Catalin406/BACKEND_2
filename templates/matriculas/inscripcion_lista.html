@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   MATRICULAS/INSCRIPCION_LISTA.HTML / INSCRIPCIONES OFICIALES
+   Código UUID, estudiante, curso y estado, filtrable por curso.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Inscripciones{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item active" aria-current="page">Inscripciones</li>
+{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-patch-check text-principal"></i> Inscripciones oficiales{% endblock %}
+{% block subtitulo %}{{ total }} inscripci{{ total|pluralize:"ón,ones" }} con los filtros actuales.{% endblock %}
+
+{% block contenido %}
+{# ===== FILTROS (InscripcionFilter) ===== #}
+<form method="get" class="panel-filtros p-3 mb-4">
+    <div class="row g-2 align-items-end">
+        {% for campo in filtro.form %}
+        <div class="col-6 col-md">
+            <label class="form-label small" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+            {{ campo }}
+        </div>
+        {% endfor %}
+        <div class="col-12 col-md-auto d-flex gap-2">
+            <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-funnel"></i> Filtrar</button>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'panel_inscripciones' %}">Limpiar</a>
+        </div>
+    </div>
+</form>
+
+{# ===== TABLA ===== #}
+<div class="card">
+    {% if pagina.object_list %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Código de inscripción</th><th>Estudiante</th><th>Curso</th><th>Emitida</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+            {% for i in pagina %}
+                <tr>
+                    <td><span class="codigo-uuid">{{ i.codigo }}</span></td>
+                    <td>{{ i.detalle.matricula.estudiante.nombre_completo }}</td>
+                    <td><a href="{% url 'panel_curso_detalle' i.detalle.curso.pk %}" class="text-reset fw-bold">{{ i.detalle.curso.titulo }}</a></td>
+                    <td class="text-nowrap">{{ i.emitida_en|date:"d-m-Y H:i" }}</td>
+                    <td>{% if i.activa %}<span class="badge-suave badge-activo">Activa</span>{% else %}<span class="badge-suave badge-inactivo">Inactiva</span>{% endif %}</td>
+                    <td class="text-end"><a href="{% url 'panel_matricula_detalle' i.detalle.matricula.pk %}" class="btn btn-outline-secondary btn-sm">Matrícula</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    {% include "parciales/estado_vacio.html" with icono="bi-patch-question" mensaje="No hay inscripciones con esos filtros." %}
+    {% endif %}
+</div>
+{% include "parciales/paginacion.html" %}
+{% endblock %}

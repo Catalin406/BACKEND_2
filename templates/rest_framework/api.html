@@ -1,0 +1,30 @@
+{% extends "rest_framework/base.html" %}
+{% load static %}
+{% comment %} ============================================================
+   REST_FRAMEWORK/API.HTML / BROWSABLE API DE DRF PERSONALIZADA
+   Reemplaza la plantilla api.html de DRF: muestra el nombre de la
+   academia en la barra, carga tema.css y agrega el footer con los
+   datos de la alumna al final de cada página de la API navegable.
+   ============================================================ {% endcomment %}
+
+{% block title %}{% if name %}{{ name }} · {% endif %}{{ NOMBRE_COMERCIAL }} API{% endblock %}
+
+{% block style %}
+{{ block.super }}
+<link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+<link rel="stylesheet" href="{% static 'css/tema.css' %}">
+<style>
+    .navbar-inverse { background: var(--color-texto); border-color: var(--color-principal); }
+    .pie-pagina { margin-top: 2rem; }
+</style>
+{% endblock %}
+
+{% block branding %}
+<a class="navbar-brand" rel="nofollow" href="/">{{ NOMBRE_COMERCIAL }} · API</a>
+{% endblock %}
+
+{% block script %}
+{# ===== FOOTER ===== #}
+{% include "parciales/footer.html" %}
+{{ block.super }}
+{% endblock %}

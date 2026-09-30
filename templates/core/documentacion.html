@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   CORE/DOCUMENTACION.HTML / GUÍA DEL SISTEMA
+   Propósito, modelo de datos, matriz de roles, flujo de matrícula,
+   estados, cómo probar con Swagger paso a paso y credenciales.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Documentación{% endblock %}
+{% block migas %}<li class="breadcrumb-item active" aria-current="page">Documentación</li>{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-book text-principal"></i> Documentación del sistema{% endblock %}
+{% block subtitulo %}Todo lo necesario para entender y probar {{ NOMBRE_COMERCIAL }}.{% endblock %}
+{% block acciones %}
+<a href="{% url 'swagger' %}" class="btn btn-primary"><i class="bi bi-braces"></i> Abrir Swagger</a>
+<a href="{% url 'redoc' %}" class="btn btn-secondary"><i class="bi bi-file-earmark-text"></i> Abrir ReDoc</a>
+{% endblock %}
+
+{% block contenido %}
+<div class="row g-4">
+    {# ===== ÍNDICE ===== #}
+    <aside class="col-lg-3">
+        <div class="card sticky-lg-top" style="top: 6rem;">
+            <div class="card-header">Contenido</div>
+            <nav class="list-group list-group-flush">
+                <a class="list-group-item list-group-item-action" href="#proposito">1. Propósito</a>
+                <a class="list-group-item list-group-item-action" href="#modelo">2. Modelo de datos</a>
+                <a class="list-group-item list-group-item-action" href="#roles">3. Matriz de roles</a>
+                <a class="list-group-item list-group-item-action" href="#flujo">4. Flujo de matrícula</a>
+                <a class="list-group-item list-group-item-action" href="#estados">5. Estados</a>
+                <a class="list-group-item list-group-item-action" href="#swagger">6. Probar con Swagger</a>
+                <a class="list-group-item list-group-item-action" href="#credenciales">7. Credenciales de prueba</a>
+            </nav>
+        </div>
+    </aside>
+
+    <div class="col-lg-9">
+        {# ===== 1. PROPÓSITO ===== #}
+        <section id="proposito" class="card mb-4">
+            <div class="card-header"><i class="bi bi-lightbulb"></i> 1. Propósito</div>
+            <div class="card-body">
+                <p>{{ NOMBRE_COMERCIAL }} es un sistema de matrícula para una academia tecnológica. Los <strong>estudiantes</strong> navegan la oferta académica y agregan cursos, bootcamps o talleres a un <strong>carro de matrícula persistente</strong> guardado en PostgreSQL. Al confirmar, el sistema valida que cada curso tenga al menos un cupo libre, cambia la matrícula a <em>Pagado</em>, descuenta un cupo por curso y emite una <strong>inscripción oficial con código UUID</strong>.</p>
+                <p class="mb-0">El <strong>Coordinador Académico</strong> administra áreas y cursos y cambia el estado de las matrículas. Si cancela una matrícula pagada, los cupos se liberan automáticamente para otros estudiantes.</p>
+            </div>
+        </section>
+
+        {# ===== 2. MODELO DE DATOS ===== #}
+        <section id="modelo" class="card mb-4">
+            <div class="card-header"><i class="bi bi-diagram-2"></i> 2. Modelo de datos (PostgreSQL, 3.ª forma normal)</div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead><tr><th>Entidad</th><th>Responsabilidad</th><th>Reglas clave</th></tr></thead>
+                    <tbody>
+                        <tr><td class="fw-bold">Usuario</td><td>Estudiante o Coordinador Académico.</td><td>Email único, RUT único si existe, rol en el JWT.</td></tr>
+                        <tr><td class="fw-bold">Área de conocimiento</td><td>Agrupa los cursos.</td><td>Nombre único, baja lógica.</td></tr>
+                        <tr><td class="fw-bold">Curso</td><td>Cohorte de curso, bootcamp o taller.</td><td>Costo &gt; 0, término ≥ inicio, 0 ≤ cupos disponibles ≤ máximos, una cohorte por título y fecha.</td></tr>
+                        <tr><td class="fw-bold">Carro de matrícula</td><td>Uno por estudiante (1 a 1).</td><td>Vive en la BD: sobrevive al logout y al cambio de dispositivo.</td></tr>
+                        <tr><td class="fw-bold">Ítem del carro</td><td>Curso agregado al carro.</td><td>Un curso no puede repetirse en el mismo carro; no guarda el costo.</td></tr>
+                        <tr><td class="fw-bold">Matrícula</td><td>Orden del estudiante con código UUID.</td><td>Estado controlado; el total se calcula, no se guarda.</td></tr>
+                        <tr><td class="fw-bold">Detalle de matrícula</td><td>Curso incluido en la matrícula.</td><td>Costo congelado al confirmar (hecho histórico).</td></tr>
+                        <tr><td class="fw-bold">Inscripción</td><td>Comprobante oficial por curso.</td><td>Código UUID único; se inactiva al cancelar.</td></tr>
+                        <tr><td class="fw-bold">Historial de estado</td><td>Auditoría de cada transición.</td><td>Estado anterior, nuevo, quién y cuándo.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        {# ===== 3. MATRIZ DE ROLES ===== #}
+        <section id="roles" class="card mb-4">
+            <div class="card-header"><i class="bi bi-shield-check"></i> 3. Matriz de roles y permisos</div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead><tr><th>Rol</th><th>Endpoints</th></tr></thead>
+                    <tbody>
+                        <tr><td class="fw-bold">Público</td><td><code>GET /api/cursos/</code>, <code>GET /api/areas/</code></td></tr>
+                        <tr><td class="fw-bold">Estudiante</td><td><code>GET/POST/DELETE /api/carro-matricula/</code>, <code>POST /api/matriculas/confirmar/</code>, <code>GET /api/mis-matriculas/</code></td></tr>
+                        <tr><td class="fw-bold">Coordinador</td><td><code>POST/PUT/DELETE /api/cursos/</code>, <code>PATCH /api/matriculas/{id}/estado/</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-body pt-3 small text-suave">Sin token la API responde <strong>401</strong>; con token pero con otro rol responde <strong>403</strong>. El rol se lee desde el claim <code>rol</code> del JWT y se contrasta con la base de datos. Las pantallas HTML no tienen login: la seguridad por roles vive en la API.</div>
+        </section>
+
+        {# ===== 4. FLUJO ===== #}
+        <section id="flujo" class="card mb-4">
+            <div class="card-header"><i class="bi bi-signpost-2"></i> 4. Flujo de matrícula</div>
+            <div class="card-body">
+                <ol class="list-unstyled mb-0">
+                    <li class="d-flex gap-3 mb-3"><span class="paso-numero">1</span><div><strong>Carro:</strong> el estudiante agrega cursos. Se rechazan duplicados, cursos inactivos, sin cupos o ya inscritos. <em>Agregar no descuenta cupos.</em></div></li>
+                    <li class="d-flex gap-3 mb-3"><span class="paso-numero">2</span><div><strong>Confirmación:</strong> en una sola transacción se bloquean el carro y los cursos (<code>SELECT … FOR UPDATE</code>, en orden por id) y se valida el cupo de cada curso. Si alguno falla, se revierte todo y la API responde <strong>409</strong>.</div></li>
+                    <li class="d-flex gap-3 mb-3"><span class="paso-numero">3</span><div><strong>Pagado + inscripciones:</strong> se crea la matrícula, se congela el costo, se descuenta 1 cupo por curso, pasa a <span class="{{ 'PAGADO'|clase_estado }}">Pagado</span> y se emite una inscripción UUID por curso. El carro se vacía.</div></li>
+                    <li class="d-flex gap-3"><span class="paso-numero">4</span><div><strong>Cierre:</strong> el coordinador marca <span class="{{ 'COMPLETADO'|clase_estado }}">Completado</span> o <span class="{{ 'CANCELADO'|clase_estado }}">Cancelado</span>. Al cancelar una matrícula pagada, se libera 1 cupo por curso y sus inscripciones quedan inactivas.</div></li>
+                </ol>
+            </div>
+        </section>
+
+        {# ===== 5. ESTADOS ===== #}
+        <section id="estados" class="card mb-4">
+            <div class="card-header"><i class="bi bi-arrow-left-right"></i> 5. Estados y transiciones permitidas</div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% for valor, etiqueta in estados %}<span class="{{ valor|clase_estado }}">{{ etiqueta }}</span>{% endfor %}
+                </div>
+                <ul class="mb-0">
+                    <li><span class="{{ 'PENDIENTE'|clase_estado }}">Pendiente</span> → <span class="{{ 'CANCELADO'|clase_estado }}">Cancelado</span></li>
+                    <li><span class="{{ 'PAGADO'|clase_estado }}">Pagado</span> → <span class="{{ 'COMPLETADO'|clase_estado }}">Completado</span> (el estudiante terminó el curso)</li>
+                    <li><span class="{{ 'PAGADO'|clase_estado }}">Pagado</span> → <span class="{{ 'CANCELADO'|clase_estado }}">Cancelado</span> (libera cupos)</li>
+                    <li>Completado y Cancelado son estados finales: cualquier otro cambio responde 400.</li>
+                </ul>
+            </div>
+        </section>
+
+        {# ===== 6. SWAGGER ===== #}
+        <section id="swagger" class="card mb-4">
+            <div class="card-header"><i class="bi bi-braces"></i> 6. Cómo probar con Swagger paso a paso</div>
+            <div class="card-body">
+                <ol class="list-unstyled">
+                    <li class="d-flex gap-3 mb-3"><span class="paso-numero">1</span><div>Abre <a href="{% url 'swagger' %}">/api/docs/</a> y ejecuta <code>POST /api/auth/login/</code> con un usuario de prueba.</div></li>
+                    <li class="d-flex gap-3 mb-3"><span class="paso-numero">2</span><div>Copia el valor <code>access</code>, presiona <strong>Authorize</strong>, pégalo y confirma.</div></li>
+                    <li class="d-flex gap-3 mb-3"><span class="paso-numero">3</span><div>Como estudiante: <code>GET /api/carro-matricula/</code>, luego <code>POST /api/carro-matricula/</code> con <code>{"curso": id}</code>. Repite el mismo curso para ver el error 400.</div></li>
+                    <li class="d-flex gap-3 mb-3"><span class="paso-numero">4</span><div>Ejecuta <code>POST /api/matriculas/confirmar/</code>: obtendrás 201 con los códigos UUID, o 409 si algún curso quedó sin cupo.</div></li>
+                    <li class="d-flex gap-3"><span class="paso-numero">5</span><div>Inicia sesión como coordinador, autoriza el nuevo token y ejecuta <code>PATCH /api/matriculas/{id}/estado/</code> con <code>{"estado": "CANCELADO"}</code> para liberar los cupos.</div></li>
+                </ol>
+<pre class="bloque-codigo mb-0">POST /api/auth/login/
+{"username": "estudiante1", "password": "Estudiante2026!"}
+
+Authorization: Bearer &lt;access&gt;</pre>
+            </div>
+        </section>
+
+        {# ===== 7. CREDENCIALES ===== #}
+        <section id="credenciales" class="card mb-4">
+            <div class="card-header"><i class="bi bi-key"></i> 7. Credenciales de prueba</div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead><tr><th>Usuario</th><th>Contraseña</th><th>Rol</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>coordinador</code></td><td><code>Coordinador2026!</code></td><td>Coordinador Académico</td></tr>
+                        <tr><td><code>estudiante1</code></td><td><code>Estudiante2026!</code></td><td>Estudiante (carro con un curso agotado: la confirmación da 409)</td></tr>
+                        <tr><td><code>estudiante2</code></td><td><code>Estudiante2026!</code></td><td>Estudiante (carro con el último cupo de un taller)</td></tr>
+                        <tr><td><code>estudiante3</code></td><td><code>Estudiante2026!</code></td><td>Estudiante (matrículas completada, pagada y cancelada)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-body small text-suave">Se cargan con <code>python manage.py seed_data</code>. La demostración de concurrencia se ejecuta con <code>python manage.py simular_concurrencia</code>.</div>
+        </section>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'swagger' %}" class="btn btn-primary"><i class="bi bi-braces"></i> Swagger UI (/api/docs/)</a>
+            <a href="{% url 'redoc' %}" class="btn btn-secondary"><i class="bi bi-file-earmark-text"></i> ReDoc (/api/redoc/)</a>
+            <a href="{% url 'api_raiz' %}" class="btn btn-outline-secondary"><i class="bi bi-diagram-3"></i> Raíz de la API</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

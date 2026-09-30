@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% comment %} ============================================================
+   CORE/PANEL.HTML / PANEL DE GESTIÓN
+   Tarjetas de acceso a cada módulo con contadores reales.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Panel de gestión{% endblock %}
+{% block migas %}<li class="breadcrumb-item active" aria-current="page">Panel de gestión</li>{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-grid-1x2 text-principal"></i> Panel de gestión{% endblock %}
+{% block subtitulo %}Administra la oferta académica, los usuarios, los carros y las matrículas.{% endblock %}
+
+{% block contenido %}
+{# ===== MÓDULOS ===== #}
+<div class="row g-4">
+    <div class="col-sm-6 col-lg-4">
+        <a href="{% url 'panel_areas' %}" class="card card-hover h-100 text-reset text-decoration-none">
+            <div class="card-body">
+                <span class="icono-modulo mb-3"><i class="bi bi-diagram-3"></i></span>
+                <h2 class="h5">Áreas de conocimiento</h2>
+                <p class="text-suave small mb-2">Crea, edita, desactiva y reactiva las áreas que agrupan los cursos.</p>
+                <span class="badge-suave">{{ n_areas }} activas</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <a href="{% url 'panel_cursos' %}" class="card card-hover h-100 text-reset text-decoration-none">
+            <div class="card-body">
+                <span class="icono-modulo cafe mb-3"><i class="bi bi-journal-code"></i></span>
+                <h2 class="h5">Cursos y bootcamps</h2>
+                <p class="text-suave small mb-2">Gestiona cohortes, costos, fechas y cupos máximos.</p>
+                <span class="badge-suave">{{ n_cursos }} activos</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <a href="{% url 'panel_usuarios' %}" class="card card-hover h-100 text-reset text-decoration-none">
+            <div class="card-body">
+                <span class="icono-modulo mb-3"><i class="bi bi-people"></i></span>
+                <h2 class="h5">Usuarios</h2>
+                <p class="text-suave small mb-2">Estudiantes y coordinadores con su rol y contraseña segura.</p>
+                <span class="badge-suave">{{ n_usuarios }} activos · {{ n_estudiantes }} estudiantes</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <a href="{% url 'panel_carros' %}" class="card card-hover h-100 text-reset text-decoration-none">
+            <div class="card-body">
+                <span class="icono-modulo cafe mb-3"><i class="bi bi-cart3"></i></span>
+                <h2 class="h5">Carros de matrícula</h2>
+                <p class="text-suave small mb-2">Revisa el carro persistente de cada estudiante y confirma su matrícula.</p>
+                <span class="badge-suave">1 carro por estudiante</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <a href="{% url 'panel_matriculas' %}" class="card card-hover h-100 text-reset text-decoration-none">
+            <div class="card-body">
+                <span class="icono-modulo mb-3"><i class="bi bi-receipt"></i></span>
+                <h2 class="h5">Matrículas</h2>
+                <p class="text-suave small mb-2">Estados, historial, costo congelado; marca completadas o cancela liberando cupos.</p>
+                <span class="badge-suave">{{ n_matriculas }} en total · {{ n_pagadas }} pagadas</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <a href="{% url 'panel_inscripciones' %}" class="card card-hover h-100 text-reset text-decoration-none">
+            <div class="card-body">
+                <span class="icono-modulo cafe mb-3"><i class="bi bi-patch-check"></i></span>
+                <h2 class="h5">Inscripciones oficiales</h2>
+                <p class="text-suave small mb-2">Códigos UUID emitidos por curso, activos e inactivos.</p>
+                <span class="badge-suave">{{ n_inscripciones }} activas</span>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

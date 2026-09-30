@@ -1,0 +1,66 @@
+{% load static %}{% comment %} ============================================================
+   TEMPLATES/BASE.HTML / ESQUELETO COMÚN DE TODAS LAS PÁGINAS
+   Navbar, migas de pan, encabezado, mensajes flash, contenido y
+   footer con los datos de la alumna. Todas las páginas heredan de
+   aquí mediante la etiqueta extends.
+   ============================================================ {% endcomment %}<!DOCTYPE html>
+<html lang="es">
+<head>
+    {# ===== METADATOS Y RECURSOS ===== #}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{{ NOMBRE_COMERCIAL }}: plataforma de matrícula para cursos, bootcamps y talleres tecnológicos.">
+    <title>{% block titulo %}Inicio{% endblock %} · {{ NOMBRE_COMERCIAL }}</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'css/tema.css' %}">
+    {% block head_extra %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100">
+    {# ===== NAVEGACIÓN ===== #}
+    {% include "parciales/navbar.html" %}
+
+    <main class="flex-grow-1 py-4">
+        <div class="container">
+            {# ===== MIGAS DE PAN ===== #}
+            {% block migas_contenedor %}
+            <nav aria-label="Migas de pan">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}"><i class="bi bi-house-heart"></i> Inicio</a></li>
+                    {% block migas %}{% endblock %}
+                </ol>
+            </nav>
+            {% endblock %}
+
+            {# ===== ENCABEZADO DE LA PÁGINA ===== #}
+            {% block encabezado %}
+            <div class="encabezado-pagina d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                <div>
+                    <h1 class="mb-1">{% block titulo_pagina %}{% endblock %}</h1>
+                    <p class="subtitulo mb-0">{% block subtitulo %}{% endblock %}</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">{% block acciones %}{% endblock %}</div>
+            </div>
+            {% endblock %}
+
+            {# ===== MENSAJES FLASH ===== #}
+            {% include "parciales/mensajes.html" %}
+
+            {# ===== CONTENIDO ===== #}
+            {% block contenido %}{% endblock %}
+        </div>
+    </main>
+
+    {# ===== FOOTER CON DATOS DE LA ALUMNA ===== #}
+    {% include "parciales/footer.html" %}
+
+    {# ===== SCRIPTS ===== #}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

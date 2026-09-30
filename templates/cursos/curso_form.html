@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% comment %} ============================================================
+   CURSOS/CURSO_FORM.HTML / CREAR O EDITAR CURSO
+   ModelForm con validación de costo, fechas, cupos y cohorte única.
+   Los cupos disponibles no se editan: se calculan al guardar.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item"><a href="{% url 'panel_cursos' %}">Cursos</a></li>
+<li class="breadcrumb-item active" aria-current="page">{% if curso %}Editar{% else %}Nuevo{% endif %}</li>
+{% endblock %}
+{% block titulo_pagina %}{{ titulo }}{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-body p-4">
+                {% if curso %}
+                <div class="alert alert-info small"><i class="bi bi-info-circle"></i> Cupos actuales: <strong>{{ curso.cupos_disponibles }} disponibles de {{ curso.cupos_maximos }}</strong> ({{ curso.cupos_ocupados }} ocupados). Si cambias el máximo, los disponibles se ajustan según la diferencia.</div>
+                {% endif %}
+                {# ===== FORMULARIO ===== #}
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+                    <div class="row">
+                        <div class="col-md-8">{% include "parciales/campo.html" with campo=form.titulo %}</div>
+                        <div class="col-md-4">{% include "parciales/campo.html" with campo=form.area %}</div>
+                    </div>
+                    {% include "parciales/campo.html" with campo=form.descripcion %}
+                    <div class="row">
+                        <div class="col-md-4">{% include "parciales/campo.html" with campo=form.tipo %}</div>
+                        <div class="col-md-4">{% include "parciales/campo.html" with campo=form.modalidad %}</div>
+                        <div class="col-md-4">{% include "parciales/campo.html" with campo=form.costo_matricula %}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">{% include "parciales/campo.html" with campo=form.fecha_inicio %}</div>
+                        <div class="col-md-4">{% include "parciales/campo.html" with campo=form.fecha_termino %}</div>
+                        <div class="col-md-4">{% include "parciales/campo.html" with campo=form.cupos_maximos %}</div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% if curso %}{% url 'panel_curso_detalle' curso.pk %}{% else %}{% url 'panel_cursos' %}{% endif %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   CORE/INICIO.HTML / PORTADA
+   Nombre de la academia, estadísticas reales desde PostgreSQL,
+   matrículas por estado, próximos cursos, áreas y accesos rápidos.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Inicio{% endblock %}
+{% block migas_contenedor %}{% endblock %}
+{% block encabezado %}{% endblock %}
+
+{% block contenido %}
+{# ===== PORTADA ===== #}
+<section class="portada p-4 p-md-5 mb-4">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+            <span class="badge-suave mb-3"><i class="bi bi-stars"></i> Matrículas abiertas 2026-2027</span>
+            <h1 class="display-5 mb-3">{{ NOMBRE_COMERCIAL }}</h1>
+            <p class="lead mb-4">Cursos, bootcamps y talleres tecnológicos con cupos limitados por cohorte. Arma tu carro de matrícula, confírmalo y recibe tu inscripción oficial al instante.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'oferta_lista' %}" class="btn btn-primary btn-lg"><i class="bi bi-journal-bookmark"></i> Ver oferta académica</a>
+                <a href="{% url 'panel' %}" class="btn btn-secondary btn-lg"><i class="bi bi-grid-1x2"></i> Panel de gestión</a>
+            </div>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-mortarboard icono-portada"></i>
+        </div>
+    </div>
+</section>
+
+{# ===== ESTADÍSTICAS ===== #}
+<section class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card tarjeta-estadistica h-100"><div class="card-body d-flex gap-3 align-items-center">
+            <span class="icono"><i class="bi bi-journal-code"></i></span>
+            <div><div class="valor">{{ total_cursos }}</div><div class="small text-suave">Cursos activos</div></div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card tarjeta-estadistica h-100"><div class="card-body d-flex gap-3 align-items-center">
+            <span class="icono cafe"><i class="bi bi-diagram-3"></i></span>
+            <div><div class="valor">{{ total_areas }}</div><div class="small text-suave">Áreas de conocimiento</div></div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card tarjeta-estadistica h-100"><div class="card-body d-flex gap-3 align-items-center">
+            <span class="icono"><i class="bi bi-people"></i></span>
+            <div><div class="valor">{{ total_cupos }}</div><div class="small text-suave">Cupos disponibles</div></div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card tarjeta-estadistica h-100"><div class="card-body d-flex gap-3 align-items-center">
+            <span class="icono cafe"><i class="bi bi-patch-check"></i></span>
+            <div><div class="valor">{{ total_inscripciones }}</div><div class="small text-suave">Inscripciones activas</div></div>
+        </div></div>
+    </div>
+</section>
+
+{# ===== MATRÍCULAS POR ESTADO ===== #}
+<section class="card mb-4">
+    <div class="card-header"><i class="bi bi-receipt"></i> Matrículas por estado</div>
+    <div class="card-body d-flex flex-wrap gap-3">
+        {% for item in estadisticas_matriculas %}
+        <a href="{% url 'panel_matriculas' %}?estado={{ item.valor }}" class="{{ item.valor|clase_estado }} fs-6 text-decoration-none">
+            {{ item.etiqueta }}: {{ item.cantidad }}
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<div class="row g-4">
+    {# ===== PRÓXIMOS CURSOS ===== #}
+    <section class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h4 mb-0"><i class="bi bi-calendar-heart text-principal"></i> Próximos cursos por iniciar</h2>
+            <a href="{% url 'oferta_lista' %}" class="small fw-bold">Ver todos <i class="bi bi-arrow-right"></i></a>
+        </div>
+        {% if proximos_cursos %}
+        <div class="row g-3">
+            {% for curso in proximos_cursos %}
+            <div class="col-md-6">{% include "parciales/tarjeta_curso.html" with curso=curso %}</div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card"><div class="card-body">
+            {% url 'panel_curso_crear' as url_nuevo %}
+            {% include "parciales/estado_vacio.html" with icono="bi-calendar-x" mensaje="Aún no hay cursos próximos a iniciar." url=url_nuevo texto_boton="Crear curso" %}
+        </div></div>
+        {% endif %}
+    </section>
+
+    {# ===== ÁREAS Y ACCESOS RÁPIDOS ===== #}
+    <aside class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-diagram-3"></i> Áreas de conocimiento</div>
+            <ul class="list-group list-group-flush">
+                {% for area in areas %}
+                <li class="list-group-item d-flex align-items-center gap-2">
+                    <span class="icono-area"><i class="bi {{ area.icono_css }}"></i></span>
+                    <a href="{% url 'oferta_lista' %}?area={{ area.pk }}" class="flex-grow-1 text-reset fw-bold">{{ area.nombre }}</a>
+                    <span class="badge-suave">{{ area.n_cursos }}</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-suave">Sin áreas registradas.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-lightning-charge"></i> Accesos rápidos</div>
+            <div class="list-group list-group-flush">
+                <a href="{% url 'panel_carros' %}" class="list-group-item list-group-item-action"><i class="bi bi-cart3"></i> Carros de matrícula</a>
+                <a href="{% url 'panel_matriculas' %}" class="list-group-item list-group-item-action"><i class="bi bi-receipt"></i> Matrículas</a>
+                <a href="{% url 'panel_inscripciones' %}" class="list-group-item list-group-item-action"><i class="bi bi-patch-check"></i> Inscripciones oficiales</a>
+                <a href="{% url 'documentacion' %}" class="list-group-item list-group-item-action"><i class="bi bi-book"></i> Documentación del sistema</a>
+                <a href="{% url 'swagger' %}" class="list-group-item list-group-item-action"><i class="bi bi-braces"></i> API REST (Swagger)</a>
+            </div>
+        </div>
+    </aside>
+</div>
+{% endblock %}

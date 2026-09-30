@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   MATRICULAS/MATRICULA_LISTA.HTML / LISTADO DE MATRÍCULAS (PANEL)
+   Filtros de MatriculaFilter: estado, estudiante, curso y fechas.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Matrículas{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item active" aria-current="page">Matrículas</li>
+{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-receipt text-principal"></i> Matrículas{% endblock %}
+{% block subtitulo %}{{ total }} matrícula{{ total|pluralize }} con los filtros actuales.{% endblock %}
+{% block acciones %}<a href="{% url 'panel_carros' %}" class="btn btn-primary"><i class="bi bi-cart3"></i> Ir a carros</a>{% endblock %}
+
+{% block contenido %}
+{# ===== FILTROS (MatriculaFilter) ===== #}
+<form method="get" class="panel-filtros p-3 mb-4">
+    <div class="row g-2 align-items-end">
+        {% for campo in filtro.form %}
+        <div class="col-6 col-lg">
+            <label class="form-label small" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+            {{ campo }}
+        </div>
+        {% endfor %}
+        <div class="col-12 col-lg-auto d-flex gap-2">
+            <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-funnel"></i> Filtrar</button>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'panel_matriculas' %}">Limpiar</a>
+        </div>
+    </div>
+</form>
+
+{# ===== TABLA ===== #}
+<div class="card">
+    {% if pagina.object_list %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Código</th><th>Estudiante</th><th>Estado</th><th>Creada</th><th>Pagada</th><th class="text-end">Total</th><th></th></tr></thead>
+            <tbody>
+            {% for m in pagina %}
+                <tr>
+                    <td><span class="codigo-uuid">{{ m.codigo|truncatechars:13 }}</span></td>
+                    <td>{{ m.estudiante.nombre_completo }}<div class="small text-suave">{{ m.estudiante.username }}</div></td>
+                    <td><span class="{{ m.estado|clase_estado }}">{{ m.get_estado_display }}</span></td>
+                    <td class="text-nowrap">{{ m.creada_en|date:"d-m-Y H:i" }}</td>
+                    <td class="text-nowrap">{{ m.pagada_en|date:"d-m-Y H:i"|default:"—" }}</td>
+                    <td class="text-end fw-bold text-nowrap">{{ m.total|clp }}</td>
+                    <td class="text-end"><a href="{% url 'panel_matricula_detalle' m.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-eye"></i> Ver</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    {% url 'panel_carros' as url_carros %}
+    {% include "parciales/estado_vacio.html" with icono="bi-receipt" mensaje="No hay matrículas con esos filtros." url=url_carros texto_boton="Confirmar desde un carro" %}
+    {% endif %}
+</div>
+{% include "parciales/paginacion.html" %}
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   CURSOS/CURSO_DETALLE.HTML / FICHA DEL CURSO (PANEL)
+   Datos completos, barra de ocupación e inscritos del curso con su
+   código UUID.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}{{ curso.titulo }}{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item"><a href="{% url 'panel_cursos' %}">Cursos</a></li>
+<li class="breadcrumb-item active" aria-current="page">{{ curso.titulo }}</li>
+{% endblock %}
+{% block titulo_pagina %}{{ curso.titulo }}{% endblock %}
+{% block subtitulo %}{{ curso.area.nombre }} · {% if curso.activo %}<span class="badge-suave badge-activo">Activo</span>{% else %}<span class="badge-suave badge-inactivo">Inactivo</span>{% endif %}{% endblock %}
+{% block acciones %}
+<a href="{% url 'panel_curso_editar' curso.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
+{% if curso.activo %}
+<a href="{% url 'panel_curso_desactivar' curso.pk %}" class="btn btn-peligro"><i class="bi bi-slash-circle"></i> Desactivar</a>
+{% else %}
+<a href="{% url 'panel_curso_reactivar' curso.pk %}" class="btn btn-exito"><i class="bi bi-arrow-counterclockwise"></i> Reactivar</a>
+{% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="row g-4 mb-4">
+    {# ===== DATOS DEL CURSO ===== #}
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="{{ curso.tipo|clase_tipo }}">{{ curso.get_tipo_display }}</span>
+                    <span class="{{ curso.modalidad|clase_modalidad }}"><i class="bi bi-geo-alt"></i> {{ curso.get_modalidad_display }}</span>
+                </div>
+                <p>{{ curso.descripcion|linebreaksbr }}</p>
+                <dl class="row mb-0 small">
+                    <dt class="col-sm-4">Fecha de inicio</dt><dd class="col-sm-8">{{ curso.fecha_inicio|date:"d-m-Y" }}</dd>
+                    <dt class="col-sm-4">Fecha de término</dt><dd class="col-sm-8">{{ curso.fecha_termino|date:"d-m-Y" }}</dd>
+                    <dt class="col-sm-4">Duración</dt><dd class="col-sm-8">{{ curso.duracion_dias }} día{{ curso.duracion_dias|pluralize }}</dd>
+                    <dt class="col-sm-4">Costo de matrícula</dt><dd class="col-sm-8">{{ curso.costo_matricula|clp }}</dd>
+                    <dt class="col-sm-4">Creado / actualizado</dt><dd class="col-sm-8">{{ curso.creado_en|date:"d-m-Y H:i" }} / {{ curso.actualizado_en|date:"d-m-Y H:i" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    {# ===== CUPOS ===== #}
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-people"></i> Cupos de la cohorte</div>
+            <div class="card-body">
+                {% include "parciales/barra_cupos.html" with curso=curso %}
+                <hr>
+                <div class="d-flex justify-content-between"><span>Máximos</span><strong>{{ curso.cupos_maximos }}</strong></div>
+                <div class="d-flex justify-content-between"><span>Ocupados</span><strong>{{ curso.cupos_ocupados }}</strong></div>
+                <div class="d-flex justify-content-between"><span>Disponibles</span><strong>{{ curso.cupos_disponibles }}</strong></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ===== INSCRITOS ===== #}
+<div class="card">
+    <div class="card-header"><i class="bi bi-patch-check"></i> Inscripciones del curso</div>
+    {% if inscripciones %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Código de inscripción</th><th>Estudiante</th><th>Matrícula</th><th>Emitida</th><th>Estado</th></tr></thead>
+            <tbody>
+            {% for inscripcion in inscripciones %}
+                <tr>
+                    <td><span class="codigo-uuid">{{ inscripcion.codigo }}</span></td>
+                    <td>{{ inscripcion.detalle.matricula.estudiante.nombre_completo }}</td>
+                    <td><a href="{% url 'panel_matricula_detalle' inscripcion.detalle.matricula.pk %}"><span class="{{ inscripcion.detalle.matricula.estado|clase_estado }}">{{ inscripcion.detalle.matricula.get_estado_display }}</span></a></td>
+                    <td class="text-nowrap">{{ inscripcion.emitida_en|date:"d-m-Y H:i" }}</td>
+                    <td>{% if inscripcion.activa %}<span class="badge-suave badge-activo">Activa</span>{% else %}<span class="badge-suave badge-inactivo">Inactiva</span>{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    {% include "parciales/estado_vacio.html" with icono="bi-person-x" mensaje="Este curso aún no tiene inscripciones." %}
+    {% endif %}
+</div>
+{% endblock %}

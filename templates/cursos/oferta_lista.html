@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% comment %} ============================================================
+   CURSOS/OFERTA_LISTA.HTML / OFERTA ACADÉMICA PÚBLICA
+   Formulario GET con los mismos filtros de CursoFilter que usa la
+   API, más búsqueda, orden y paginación.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Oferta académica{% endblock %}
+{% block migas %}<li class="breadcrumb-item active" aria-current="page">Oferta académica</li>{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-journal-bookmark text-principal"></i> Oferta académica{% endblock %}
+{% block subtitulo %}{{ total }} curso{{ total|pluralize }} disponible{{ total|pluralize }} con los filtros actuales.{% endblock %}
+
+{% block contenido %}
+{# ===== FILTROS (CursoFilter) ===== #}
+<form method="get" class="panel-filtros p-3 mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-12 col-lg-4">
+            <label class="form-label small" for="id_q">Buscar</label>
+            <input type="search" name="q" id="id_q" value="{{ q }}" class="form-control form-control-sm" placeholder="Título, descripción o área">
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label small" for="{{ filtro.form.area.id_for_label }}">{{ filtro.form.area.label }}</label>
+            {{ filtro.form.area }}
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label small" for="{{ filtro.form.tipo.id_for_label }}">{{ filtro.form.tipo.label }}</label>
+            {{ filtro.form.tipo }}
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label small" for="{{ filtro.form.modalidad.id_for_label }}">{{ filtro.form.modalidad.label }}</label>
+            {{ filtro.form.modalidad }}
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label small" for="{{ filtro.form.con_cupos.id_for_label }}">{{ filtro.form.con_cupos.label }}</label>
+            {{ filtro.form.con_cupos }}
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label small" for="{{ filtro.form.costo_min.id_for_label }}">{{ filtro.form.costo_min.label }}</label>
+            {{ filtro.form.costo_min }}
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label small" for="{{ filtro.form.costo_max.id_for_label }}">{{ filtro.form.costo_max.label }}</label>
+            {{ filtro.form.costo_max }}
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label small" for="{{ filtro.form.inicio_desde.id_for_label }}">{{ filtro.form.inicio_desde.label }}</label>
+            {{ filtro.form.inicio_desde }}
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label small" for="{{ filtro.form.inicio_hasta.id_for_label }}">{{ filtro.form.inicio_hasta.label }}</label>
+            {{ filtro.form.inicio_hasta }}
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label small" for="id_orden">Ordenar por</label>
+            <select name="orden" id="id_orden" class="form-select form-select-sm">
+                {% for valor, texto in ordenes.items %}<option value="{{ valor }}" {% if valor == orden %}selected{% endif %}>{{ texto }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-lg-2 d-flex gap-2">
+            <button class="btn btn-primary btn-sm flex-grow-1" type="submit"><i class="bi bi-funnel"></i> Filtrar</button>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'oferta_lista' %}">Limpiar</a>
+        </div>
+    </div>
+    {% if filtro.form.errors %}
+    <div class="text-principal small mt-2"><i class="bi bi-exclamation-circle"></i> Revisa los filtros: {% for campo, errores in filtro.form.errors.items %}{{ errores|join:" " }} {% endfor %}</div>
+    {% endif %}
+</form>
+
+{# ===== LISTADO DE CURSOS ===== #}
+{% if pagina.object_list %}
+<div class="row g-3">
+    {% for curso in pagina %}
+    <div class="col-md-6 col-xl-4">{% include "parciales/tarjeta_curso.html" with curso=curso %}</div>
+    {% endfor %}
+</div>
+{% include "parciales/paginacion.html" %}
+{% else %}
+<div class="card"><div class="card-body">
+    {% url 'oferta_lista' as url_limpiar %}
+    {% include "parciales/estado_vacio.html" with icono="bi-search-heart" mensaje="No encontramos cursos con esos filtros. Prueba ampliando la búsqueda." url=url_limpiar texto_boton="Ver toda la oferta" %}
+</div></div>
+{% endif %}
+{% endblock %}

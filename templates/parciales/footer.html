@@ -1,0 +1,13 @@
+{% comment %} ============================================================
+   PARCIALES/FOOTER.HTML / PIE DE PÁGINA CON DATOS DE LA ALUMNA
+   Nombre, sección y año llegan desde .env mediante el context
+   processor core.context_processors.datos_alumno. Se incluye en
+   todas las páginas, en la redirección, en Swagger/ReDoc y en la
+   Browsable API de DRF.
+   ============================================================ {% endcomment %}
+<footer class="pie-pagina">
+    <div class="pie-autora">{{ ALUMNO_NOMBRE }} · Sección {{ ALUMNO_SECCION }} · {{ ALUMNO_ANIO }}</div>
+    <div class="pie-enlaces">
+        <a href="/documentacion/">Documentación</a>·<a href="/api/docs/">API (Swagger)</a>
+    </div>
+</footer>

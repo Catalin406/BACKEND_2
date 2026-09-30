@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   CURSOS/AREA_DETALLE.HTML / FICHA DE UN ÁREA
+   Datos del área y sus cursos (activos e inactivos).
+   ============================================================ {% endcomment %}
+
+{% block titulo %}{{ area.nombre }}{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item"><a href="{% url 'panel_areas' %}">Áreas</a></li>
+<li class="breadcrumb-item active" aria-current="page">{{ area.nombre }}</li>
+{% endblock %}
+{% block titulo_pagina %}<span class="icono-area me-2"><i class="bi {{ area.icono_css }}"></i></span>{{ area.nombre }}{% endblock %}
+{% block subtitulo %}{% if area.activo %}<span class="badge-suave badge-activo">Activa</span>{% else %}<span class="badge-suave badge-inactivo">Inactiva</span>{% endif %}{% endblock %}
+{% block acciones %}
+<a href="{% url 'panel_area_editar' area.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
+{% if area.activo %}
+<a href="{% url 'panel_area_desactivar' area.pk %}" class="btn btn-peligro"><i class="bi bi-slash-circle"></i> Desactivar</a>
+{% else %}
+<a href="{% url 'panel_area_reactivar' area.pk %}" class="btn btn-exito"><i class="bi bi-arrow-counterclockwise"></i> Reactivar</a>
+{% endif %}
+{% endblock %}
+
+{% block contenido %}
+{# ===== DATOS ===== #}
+<div class="card mb-4">
+    <div class="card-body">
+        <p class="mb-2">{{ area.descripcion|default:"Sin descripción." }}</p>
+        <p class="small text-suave mb-0">Creada el {{ area.creado_en|date:"d-m-Y H:i" }} · Actualizada el {{ area.actualizado_en|date:"d-m-Y H:i" }}</p>
+    </div>
+</div>
+
+{# ===== CURSOS DEL ÁREA ===== #}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-journal-code"></i> Cursos del área</span>
+        <a href="{% url 'panel_curso_crear' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Nuevo curso</a>
+    </div>
+    {% if cursos %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Curso</th><th>Tipo</th><th>Inicio</th><th>Costo</th><th>Cupos</th><th>Estado</th></tr></thead>
+            <tbody>
+            {% for curso in cursos %}
+                <tr>
+                    <td><a href="{% url 'panel_curso_detalle' curso.pk %}" class="fw-bold text-reset">{{ curso.titulo }}</a></td>
+                    <td><span class="{{ curso.tipo|clase_tipo }}">{{ curso.get_tipo_display }}</span></td>
+                    <td>{{ curso.fecha_inicio|date:"d-m-Y" }}</td>
+                    <td>{{ curso.costo_matricula|clp }}</td>
+                    <td>{{ curso.cupos_disponibles }}/{{ curso.cupos_maximos }}</td>
+                    <td>{% if curso.activo %}<span class="badge-suave badge-activo">Activo</span>{% else %}<span class="badge-suave badge-inactivo">Inactivo</span>{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    {% url 'panel_curso_crear' as url_nuevo %}
+    {% include "parciales/estado_vacio.html" with icono="bi-journal-x" mensaje="Esta área aún no tiene cursos." url=url_nuevo texto_boton="Crear curso" %}
+    {% endif %}
+</div>
+{% endblock %}

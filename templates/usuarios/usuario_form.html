@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% comment %} ============================================================
+   USUARIOS/USUARIO_FORM.HTML / CREAR O EDITAR USUARIO
+   Permite elegir el rol; la contraseña se guarda con set_password.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item"><a href="{% url 'panel_usuarios' %}">Usuarios</a></li>
+<li class="breadcrumb-item active" aria-current="page">{% if usuario_obj %}Editar{% else %}Nuevo{% endif %}</li>
+{% endblock %}
+{% block titulo_pagina %}{{ titulo }}{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card">
+            <div class="card-body p-4">
+                {# ===== FORMULARIO ===== #}
+                <form method="post" novalidate autocomplete="off">
+                    {% csrf_token %}
+                    {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+                    <div class="row">
+                        <div class="col-md-6">{% include "parciales/campo.html" with campo=form.username %}</div>
+                        <div class="col-md-6">{% include "parciales/campo.html" with campo=form.rol %}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">{% include "parciales/campo.html" with campo=form.first_name %}</div>
+                        <div class="col-md-6">{% include "parciales/campo.html" with campo=form.last_name %}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">{% include "parciales/campo.html" with campo=form.email %}</div>
+                        <div class="col-md-3">{% include "parciales/campo.html" with campo=form.rut %}</div>
+                        <div class="col-md-3">{% include "parciales/campo.html" with campo=form.telefono %}</div>
+                    </div>
+                    <hr>
+                    <h2 class="h6"><i class="bi bi-key"></i> Contraseña</h2>
+                    <div class="row">
+                        <div class="col-md-6">{% include "parciales/campo.html" with campo=form.password1 %}</div>
+                        <div class="col-md-6">{% include "parciales/campo.html" with campo=form.password2 %}</div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% if usuario_obj %}{% url 'panel_usuario_detalle' usuario_obj.pk %}{% else %}{% url 'panel_usuarios' %}{% endif %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

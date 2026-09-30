@@ -1,0 +1,9 @@
+{% comment %} ============================================================
+   PARCIALES/ESTADO_VACIO.HTML / MENSAJE CUANDO NO HAY DATOS
+   Parámetros: icono, mensaje, url (opcional) y texto_boton.
+   ============================================================ {% endcomment %}
+<div class="estado-vacio">
+    <i class="bi {{ icono|default:'bi-inbox' }}"></i>
+    <p class="mt-2 mb-3">{{ mensaje }}</p>
+    {% if url %}<a href="{{ url }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> {{ texto_boton }}</a>{% endif %}
+</div>

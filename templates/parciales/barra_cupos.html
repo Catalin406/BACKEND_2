@@ -1,0 +1,18 @@
+{% comment %} ============================================================
+   PARCIALES/BARRA_CUPOS.HTML / BARRA DE OCUPACIÓN DE CUPOS
+   Recibe "curso". Verde con cupos, amarillo sobre 75 % y rojo
+   pastel cuando está agotado (colores en tema.css).
+   ============================================================ {% endcomment %}
+<div class="d-flex justify-content-between small mb-1">
+    <span class="fw-bold">
+        {% if curso.cupos_disponibles == 0 %}<i class="bi bi-x-circle"></i> Sin cupos
+        {% elif curso.cupos_disponibles == 1 %}<i class="bi bi-exclamation-circle"></i> ¡Último cupo!
+        {% else %}<i class="bi bi-people"></i> {{ curso.cupos_disponibles }} cupos disponibles{% endif %}
+    </span>
+    <span class="text-suave">{{ curso.cupos_disponibles }}/{{ curso.cupos_maximos }}</span>
+</div>
+<div class="progress barra-cupos {% if curso.cupos_disponibles == 0 %}agotado{% elif curso.porcentaje_ocupacion >= 75 %}medio{% endif %}"
+     role="progressbar" aria-label="Ocupación de cupos" aria-valuenow="{{ curso.porcentaje_ocupacion }}" aria-valuemin="0" aria-valuemax="100">
+    <div class="progress-bar" style="width: {{ curso.porcentaje_ocupacion }}%"></div>
+</div>
+<div class="small text-suave mt-1">{{ curso.porcentaje_ocupacion }} % de ocupación</div>

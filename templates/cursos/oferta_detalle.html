@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   CURSOS/OFERTA_DETALLE.HTML / DETALLE PÚBLICO DE UN CURSO
+   Área, tipo, modalidad, fechas, duración, costo y cupos
+   disponibles/máximos con barra de ocupación.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}{{ curso.titulo }}{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'oferta_lista' %}">Oferta académica</a></li>
+<li class="breadcrumb-item active" aria-current="page">{{ curso.titulo }}</li>
+{% endblock %}
+{% block titulo_pagina %}{{ curso.titulo }}{% endblock %}
+{% block subtitulo %}<span class="d-inline-flex align-items-center gap-2"><span class="icono-area"><i class="bi {{ curso.area.icono_css }}"></i></span>{{ curso.area.nombre }}</span>{% endblock %}
+
+{% block contenido %}
+<div class="row g-4">
+    {# ===== DESCRIPCIÓN ===== #}
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="{{ curso.tipo|clase_tipo }}">{{ curso.get_tipo_display }}</span>
+                    <span class="{{ curso.modalidad|clase_modalidad }}"><i class="bi bi-geo-alt"></i> {{ curso.get_modalidad_display }}</span>
+                </div>
+                <h2 class="h5">Descripción</h2>
+                <p>{{ curso.descripcion|linebreaksbr }}</p>
+                <div class="row g-3 mt-2">
+                    <div class="col-sm-4"><div class="small text-suave">Fecha de inicio</div><div class="fw-bold"><i class="bi bi-calendar-event"></i> {{ curso.fecha_inicio|date:"d-m-Y" }}</div></div>
+                    <div class="col-sm-4"><div class="small text-suave">Fecha de término</div><div class="fw-bold"><i class="bi bi-calendar-check"></i> {{ curso.fecha_termino|date:"d-m-Y" }}</div></div>
+                    <div class="col-sm-4"><div class="small text-suave">Duración</div><div class="fw-bold"><i class="bi bi-hourglass-split"></i> {{ curso.duracion_dias }} día{{ curso.duracion_dias|pluralize }}</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ===== COSTO Y CUPOS ===== #}
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="small text-suave">Costo de matrícula</div>
+                <div class="display-6 fw-bold text-acento mb-3">{{ curso.costo_matricula|clp }}</div>
+                {% include "parciales/barra_cupos.html" with curso=curso %}
+                <hr>
+                <p class="small text-suave mb-3">Para matricularte agrega este curso a tu carro desde la API (<code>POST /api/carro-matricula/</code>) o desde el panel de carros.</p>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'panel_carros' %}" class="btn btn-primary"><i class="bi bi-cart-plus"></i> Ir a carros de matrícula</a>
+                    <a href="{% url 'oferta_lista' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver a la oferta</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ===== CURSOS RELACIONADOS ===== #}
+{% if relacionados %}
+<h2 class="h4 mt-5 mb-3">Más cursos de {{ curso.area.nombre }}</h2>
+<div class="row g-3">
+    {% for curso in relacionados %}
+    <div class="col-md-4">{% include "parciales/tarjeta_curso.html" with curso=curso %}</div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

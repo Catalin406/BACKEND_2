@@ -1,0 +1,17 @@
+{% comment %} ============================================================
+   PARCIALES/MENSAJES.HTML / MENSAJES FLASH (django.contrib.messages)
+   ============================================================ {% endcomment %}
+{% if messages %}
+<div class="mb-4">
+    {% for mensaje in messages %}
+    <div class="alert alert-{{ mensaje.tags|default:'info' }} alert-dismissible fade show d-flex align-items-start gap-2" role="alert">
+        {% if mensaje.level_tag == 'success' %}<i class="bi bi-check-circle-fill"></i>
+        {% elif mensaje.level_tag == 'error' %}<i class="bi bi-x-octagon-fill"></i>
+        {% elif mensaje.level_tag == 'warning' %}<i class="bi bi-exclamation-triangle-fill"></i>
+        {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
+        <div>{{ mensaje }}</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

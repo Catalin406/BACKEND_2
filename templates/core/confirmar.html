@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% comment %} ============================================================
+   CORE/CONFIRMAR.HTML / CONFIRMACIÓN DE BAJA LÓGICA O REACTIVACIÓN
+   Página genérica usada por áreas, cursos y usuarios antes de
+   desactivar (activo=False) o reactivar. Nunca borra filas.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block migas %}
+{% for texto, url in migas %}<li class="breadcrumb-item"><a href="{{ url }}">{{ texto }}</a></li>{% endfor %}
+<li class="breadcrumb-item active" aria-current="page">{{ titulo }}</li>
+{% endblock %}
+{% block titulo_pagina %}{{ titulo }}{% endblock %}
+
+{% block contenido %}
+{# ===== TARJETA DE CONFIRMACIÓN ===== #}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-body p-4 text-center">
+                {% if activar %}
+                <i class="bi bi-arrow-counterclockwise display-4 text-acento"></i>
+                <p class="mt-3 fs-5">¿Quieres reactivar el registro de {{ nombre_modelo }} <strong>«{{ objeto }}»</strong>?</p>
+                {% else %}
+                <i class="bi bi-exclamation-triangle display-4 text-principal"></i>
+                <p class="mt-3 fs-5">¿Seguro que quieres desactivar el registro de {{ nombre_modelo }} <strong>«{{ objeto }}»</strong>?</p>
+                <p class="text-suave small">Es una baja lógica: el registro no se borra y puedes reactivarlo cuando quieras.</p>
+                {% endif %}
+                {% if advertencia %}<div class="alert alert-warning text-start small">{{ advertencia }}</div>{% endif %}
+                <form method="post" class="d-flex justify-content-center gap-2 mt-3">
+                    {% csrf_token %}
+                    <a href="{{ url_cancelar }}" class="btn btn-outline-secondary">Cancelar</a>
+                    {% if activar %}
+                    <button type="submit" class="btn btn-exito"><i class="bi bi-arrow-counterclockwise"></i> Sí, reactivar</button>
+                    {% else %}
+                    <button type="submit" class="btn btn-peligro"><i class="bi bi-slash-circle"></i> Sí, desactivar</button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

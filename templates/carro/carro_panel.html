@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   CARRO/CARRO_PANEL.HTML / CARROS DE MATRÍCULA
+   "Ver carro de: [estudiante]" con el carro persistido en
+   PostgreSQL. Agregar, quitar, vaciar y confirmar usan los mismos
+   servicios que la API.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Carros de matrícula{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item active" aria-current="page">Carros de matrícula</li>
+{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-cart3 text-principal"></i> Carros de matrícula{% endblock %}
+{% block subtitulo %}Cada estudiante tiene un carro persistente (relación 1 a 1) guardado en la base de datos.{% endblock %}
+
+{% block contenido %}
+<div class="row g-4">
+    {# ===== SELECTOR DE ESTUDIANTE ===== #}
+    <aside class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get">
+                    <label class="form-label" for="{{ selector.estudiante.id_for_label }}">{{ selector.estudiante.label }}</label>
+                    <div class="input-group">
+                        <select name="estudiante" id="{{ selector.estudiante.id_for_label }}" class="form-select" data-enviar-al-cambiar>
+                            <option value="">Selecciona un estudiante</option>
+                            {% for e in estudiantes %}<option value="{{ e.pk }}" {% if estudiante and estudiante.pk == e.pk %}selected{% endif %}>{{ e.username }} · {{ e.get_full_name }}</option>{% endfor %}
+                        </select>
+                        <button class="btn btn-primary" type="submit">Ver</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-people"></i> Estudiantes activos</div>
+            <div class="list-group list-group-flush">
+                {% for e in estudiantes %}
+                <a href="?estudiante={{ e.pk }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if estudiante and estudiante.pk == e.pk %}active{% endif %}">
+                    <span>{{ e.username }}</span>
+                    <span class="badge-suave"><i class="bi bi-cart"></i> {{ e.n_items }}</span>
+                </a>
+                {% empty %}
+                <span class="list-group-item text-suave">No hay estudiantes activos.</span>
+                {% endfor %}
+            </div>
+        </div>
+    </aside>
+
+    <section class="col-lg-8">
+        {% if estudiante %}
+        {# ===== AGREGAR CURSO ===== #}
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="post" action="{% url 'panel_carro_agregar' estudiante.pk %}" class="row g-2 align-items-end">
+                    {% csrf_token %}
+                    <div class="col-md">
+                        <label class="form-label" for="{{ form_agregar.curso.id_for_label }}">{{ form_agregar.curso.label }}</label>
+                        {{ form_agregar.curso }}
+                    </div>
+                    <div class="col-md-auto"><button type="submit" class="btn btn-primary w-100"><i class="bi bi-cart-plus"></i> Agregar al carro</button></div>
+                </form>
+                <p class="small text-suave mt-2 mb-0"><i class="bi bi-info-circle"></i> Agregar al carro no descuenta cupos: el cupo se reserva solo al confirmar la matrícula.</p>
+            </div>
+        </div>
+
+        {# ===== CARRO DEL ESTUDIANTE ===== #}
+        <div class="card">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span><i class="bi bi-cart3"></i> Carro de {{ estudiante.nombre_completo }} ({{ carro.cantidad_cursos }} curso{{ carro.cantidad_cursos|pluralize }})</span>
+                <span class="small text-suave fw-normal">Actualizado: {{ carro.actualizado_en|date:"d-m-Y H:i" }}</span>
+            </div>
+            {% if items %}
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead><tr><th>Curso</th><th>Inicio</th><th>Cupos</th><th class="text-end">Costo vigente</th><th></th></tr></thead>
+                    <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ item.curso.titulo }}</div>
+                                <div class="small text-suave">{{ item.curso.area.nombre }} · {{ item.curso.get_tipo_display }}</div>
+                            </td>
+                            <td class="text-nowrap">{{ item.curso.fecha_inicio|date:"d-m-Y" }}</td>
+                            <td>
+                                {% if not item.curso.activo %}<span class="badge-suave badge-inactivo">Curso inactivo</span>
+                                {% elif item.curso.cupos_disponibles == 0 %}<span class="badge-suave badge-inactivo"><i class="bi bi-x-circle"></i> Sin cupos</span>
+                                {% else %}<span class="badge-suave badge-activo">{{ item.curso.cupos_disponibles }} disponibles</span>{% endif %}
+                            </td>
+                            <td class="text-end fw-bold text-nowrap">{{ item.curso.costo_matricula|clp }}</td>
+                            <td class="text-end">
+                                <form method="post" action="{% url 'panel_carro_quitar' estudiante.pk item.curso.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Quitar del carro"><i class="bi bi-x-lg"></i> Quitar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-secundario-suave d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="fs-5 fw-bold">Total: {{ carro.total|clp }}</div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalVaciar"><i class="bi bi-trash3"></i> Vaciar</button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalConfirmar"><i class="bi bi-credit-card"></i> Confirmar matrícula</button>
+                </div>
+            </div>
+            {% else %}
+            {% include "parciales/estado_vacio.html" with icono="bi-cart-x" mensaje="El carro de este estudiante está vacío. Agrega un curso con el formulario de arriba." %}
+            {% endif %}
+        </div>
+
+        {# ===== MODALES DE CONFIRMACIÓN ===== #}
+        <div class="modal fade" id="modalVaciar" tabindex="-1" aria-labelledby="tituloVaciar" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                <form method="post" action="{% url 'panel_carro_vaciar' estudiante.pk %}">
+                    {% csrf_token %}
+                    <div class="modal-header"><h2 class="modal-title h5" id="tituloVaciar">Vaciar carro</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+                    <div class="modal-body">¿Quitar todos los cursos del carro de {{ estudiante.username }}? Los ítems se desactivan (no se borran).</div>
+                    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-peligro">Sí, vaciar</button></div>
+                </form>
+            </div></div>
+        </div>
+        <div class="modal fade" id="modalConfirmar" tabindex="-1" aria-labelledby="tituloConfirmar" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                <form method="post" action="{% url 'panel_carro_confirmar' estudiante.pk %}">
+                    {% csrf_token %}
+                    <div class="modal-header"><h2 class="modal-title h5" id="tituloConfirmar">Confirmar matrícula</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+                    <div class="modal-body">
+                        <p>Se simulará el pago aprobado por <strong>{{ carro.total|clp }}</strong>. Si todos los cursos tienen cupo, la matrícula quedará <span class="{{ 'PAGADO'|clase_estado }}">Pagado</span>, se descontará 1 cupo por curso y se emitirán las inscripciones oficiales.</p>
+                        <p class="small text-suave mb-0">Si algún curso no tiene cupo, no se cobra nada y el carro queda intacto.</p>
+                    </div>
+                    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Confirmar y pagar</button></div>
+                </form>
+            </div></div>
+        </div>
+        {% else %}
+        <div class="card"><div class="card-body">
+            {% include "parciales/estado_vacio.html" with icono="bi-person-check" mensaje="Selecciona un estudiante para ver su carro de matrícula." %}
+        </div></div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

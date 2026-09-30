@@ -1,0 +1,53 @@
+{% comment %} ============================================================
+   PARCIALES/NAVBAR.HTML / BARRA DE NAVEGACIÓN PRINCIPAL
+   Nombre de la academia con ícono y accesos a la oferta, el panel
+   de gestión, la documentación y la API. Marca el enlace activo
+   según la ruta actual.
+   ============================================================ {% endcomment %}
+{% with ruta=request.path %}
+<nav class="navbar navbar-expand-lg navbar-academia sticky-top">
+    <div class="container">
+        {# ===== MARCA ===== #}
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'inicio' %}">
+            <span class="marca-icono"><i class="bi bi-mortarboard-fill"></i></span>
+            <span>{{ NOMBRE_COMERCIAL }}</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal"
+                aria-controls="menuPrincipal" aria-expanded="false" aria-label="Abrir menú">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        {# ===== ENLACES ===== #}
+        <div class="collapse navbar-collapse" id="menuPrincipal">
+            <ul class="navbar-nav ms-auto gap-lg-1">
+                <li class="nav-item">
+                    <a class="nav-link {% if ruta == '/' %}active{% endif %}" href="{% url 'inicio' %}"><i class="bi bi-house-heart"></i> Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if ruta|slice:':8' == '/cursos/' %}active{% endif %}" href="{% url 'oferta_lista' %}"><i class="bi bi-journal-bookmark"></i> Oferta académica</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if ruta|slice:':7' == '/panel/' %}active{% endif %}" href="#" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-grid-1x2"></i> Gestión</a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'panel' %}"><i class="bi bi-speedometer2"></i> Panel de gestión</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'panel_areas' %}"><i class="bi bi-diagram-3"></i> Áreas</a></li>
+                        <li><a class="dropdown-item" href="{% url 'panel_cursos' %}"><i class="bi bi-journal-code"></i> Cursos</a></li>
+                        <li><a class="dropdown-item" href="{% url 'panel_usuarios' %}"><i class="bi bi-people"></i> Usuarios</a></li>
+                        <li><a class="dropdown-item" href="{% url 'panel_carros' %}"><i class="bi bi-cart3"></i> Carros de matrícula</a></li>
+                        <li><a class="dropdown-item" href="{% url 'panel_matriculas' %}"><i class="bi bi-receipt"></i> Matrículas</a></li>
+                        <li><a class="dropdown-item" href="{% url 'panel_inscripciones' %}"><i class="bi bi-patch-check"></i> Inscripciones</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if ruta == '/documentacion/' %}active{% endif %}" href="{% url 'documentacion' %}"><i class="bi bi-book"></i> Documentación</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'swagger' %}"><i class="bi bi-braces"></i> API</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+{% endwith %}

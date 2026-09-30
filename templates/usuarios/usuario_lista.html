@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% comment %} ============================================================
+   USUARIOS/USUARIO_LISTA.HTML / LISTADO DE USUARIOS (PANEL)
+   Buscador, filtro por rol y por activos/inactivos, acciones CRUD.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Usuarios{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item active" aria-current="page">Usuarios</li>
+{% endblock %}
+{% block titulo_pagina %}<i class="bi bi-people text-principal"></i> Usuarios{% endblock %}
+{% block subtitulo %}Estudiantes y coordinadores académicos.{% endblock %}
+{% block acciones %}<a href="{% url 'panel_usuario_crear' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Nuevo usuario</a>{% endblock %}
+
+{% block contenido %}
+{# ===== FILTROS ===== #}
+<form method="get" class="panel-filtros p-3 mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-12 col-md">
+            <label class="form-label small" for="id_q">Buscar</label>
+            <input type="search" name="q" id="id_q" value="{{ q }}" class="form-control form-control-sm" placeholder="Usuario, nombre, correo o RUT">
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small" for="id_rol">Rol</label>
+            <select name="rol" id="id_rol" class="form-select form-select-sm">
+                <option value="">Todos los roles</option>
+                {% for valor, etiqueta in roles %}<option value="{{ valor }}" {% if rol == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small" for="id_estado">Mostrar</label>
+            <select name="estado" id="id_estado" class="form-select form-select-sm">
+                <option value="activos" {% if estado == 'activos' %}selected{% endif %}>Solo activos</option>
+                <option value="inactivos" {% if estado == 'inactivos' %}selected{% endif %}>Solo inactivos</option>
+                <option value="todos" {% if estado == 'todos' %}selected{% endif %}>Todos</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-auto d-flex gap-2">
+            <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-search"></i> Filtrar</button>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'panel_usuarios' %}">Limpiar</a>
+        </div>
+    </div>
+</form>
+
+{# ===== TABLA ===== #}
+<div class="card">
+    {% if pagina.object_list %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Usuario</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+            <tbody>
+            {% for u in pagina %}
+                <tr>
+                    <td><a href="{% url 'panel_usuario_detalle' u.pk %}" class="fw-bold text-reset">{{ u.username }}</a></td>
+                    <td>{{ u.get_full_name|default:"—" }}</td>
+                    <td class="small">{{ u.email }}</td>
+                    <td><span class="{% if u.es_coordinador %}badge-tipo badge-tipo-bootcamp{% else %}badge-tipo badge-tipo-curso{% endif %}">{{ u.get_rol_display }}</span></td>
+                    <td>{% if u.is_active %}<span class="badge-suave badge-activo">Activo</span>{% else %}<span class="badge-suave badge-inactivo">Inactivo</span>{% endif %}</td>
+                    <td class="text-end text-nowrap">
+                        <a href="{% url 'panel_usuario_detalle' u.pk %}" class="btn btn-outline-secondary btn-sm" title="Ver"><i class="bi bi-eye"></i></a>
+                        <a href="{% url 'panel_usuario_editar' u.pk %}" class="btn btn-outline-primary btn-sm" title="Editar"><i class="bi bi-pencil"></i></a>
+                        {% if u.is_active %}
+                        <a href="{% url 'panel_usuario_desactivar' u.pk %}" class="btn btn-peligro btn-sm" title="Desactivar"><i class="bi bi-person-slash"></i></a>
+                        {% else %}
+                        <a href="{% url 'panel_usuario_reactivar' u.pk %}" class="btn btn-exito btn-sm" title="Reactivar"><i class="bi bi-arrow-counterclockwise"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    {% url 'panel_usuario_crear' as url_nuevo %}
+    {% include "parciales/estado_vacio.html" with icono="bi-person-x" mensaje="No hay usuarios que coincidan con el filtro." url=url_nuevo texto_boton="Crear usuario" %}
+    {% endif %}
+</div>
+{% include "parciales/paginacion.html" %}
+{% endblock %}

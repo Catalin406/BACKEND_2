@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% comment %} ============================================================
+   CURSOS/AREA_FORM.HTML / CREAR O EDITAR ÁREA
+   ModelForm con errores por campo y vista previa del ícono.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item"><a href="{% url 'panel_areas' %}">Áreas</a></li>
+<li class="breadcrumb-item active" aria-current="page">{% if area %}Editar{% else %}Nueva{% endif %}</li>
+{% endblock %}
+{% block titulo_pagina %}{{ titulo }}{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body p-4">
+                {# ===== FORMULARIO ===== #}
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+                    {% include "parciales/campo.html" with campo=form.nombre %}
+                    {% include "parciales/campo.html" with campo=form.descripcion %}
+                    {% include "parciales/campo.html" with campo=form.icono %}
+                    <p class="small text-suave">Busca íconos en <a href="https://icons.getbootstrap.com/" target="_blank" rel="noopener">Bootstrap Icons</a>, por ejemplo <code>bi-code-slash</code>, <code>bi-cpu</code> o <code>bi-palette</code>.</p>
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% if area %}{% url 'panel_area_detalle' area.pk %}{% else %}{% url 'panel_areas' %}{% endif %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

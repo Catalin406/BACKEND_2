@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   MATRICULAS/MATRICULA_DETALLE.HTML / DETALLE DE UNA MATRÍCULA
+   Cursos con costo congelado, total, código UUID, inscripciones
+   emitidas, historial de estados y botones de transición (solo los
+   permitidos), con modal de confirmación.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Matrícula {{ matricula.codigo|truncatechars:9 }}{% endblock %}
+{% block migas %}
+<li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+<li class="breadcrumb-item"><a href="{% url 'panel_matriculas' %}">Matrículas</a></li>
+<li class="breadcrumb-item active" aria-current="page">Detalle</li>
+{% endblock %}
+{% block titulo_pagina %}Matrícula <span class="{{ matricula.estado|clase_estado }} align-middle">{{ matricula.get_estado_display }}</span>{% endblock %}
+{% block subtitulo %}Código: <span class="codigo-uuid">{{ matricula.codigo }}</span>{% endblock %}
+{% block acciones %}
+{% if puede_completar %}
+<button type="button" class="btn btn-exito" data-bs-toggle="modal" data-bs-target="#modalEstado"
+        data-estado="COMPLETADO" data-titulo="Marcar como completada" data-boton="Sí, marcar completada" data-clase="btn-exito"
+        data-mensaje="El estudiante terminó sus cursos. Las inscripciones se mantienen activas y el estado será final.">
+    <i class="bi bi-check2-circle"></i> Marcar completada
+</button>
+{% endif %}
+{% if puede_cancelar %}
+<button type="button" class="btn btn-peligro" data-bs-toggle="modal" data-bs-target="#modalEstado"
+        data-estado="CANCELADO" data-titulo="Cancelar matrícula" data-boton="Sí, cancelar" data-clase="btn-peligro"
+        data-mensaje="{% if matricula.estado == 'PAGADO' %}Se liberará 1 cupo en cada curso y las inscripciones quedarán inactivas. {% endif %}Esta acción es final.">
+    <i class="bi bi-x-circle"></i> Cancelar
+</button>
+{% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        {# ===== CURSOS (COSTO CONGELADO) E INSCRIPCIONES ===== #}
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-journal-check"></i> Cursos matriculados</div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead><tr><th>Curso</th><th>Inscripción oficial</th><th class="text-end">Costo congelado</th></tr></thead>
+                    <tbody>
+                    {% for detalle in matricula.detalles.all %}
+                        <tr>
+                            <td><a href="{% url 'panel_curso_detalle' detalle.curso.pk %}" class="fw-bold text-reset">{{ detalle.curso.titulo }}</a><div class="small text-suave">{{ detalle.curso.area.nombre }} · inicia el {{ detalle.curso.fecha_inicio|date:"d-m-Y" }}</div></td>
+                            <td>
+                                {% if detalle.inscripcion %}
+                                <span class="codigo-uuid">{{ detalle.inscripcion.codigo }}</span>
+                                <div>{% if detalle.inscripcion.activa %}<span class="badge-suave badge-activo mt-1">Activa</span>{% else %}<span class="badge-suave badge-inactivo mt-1">Inactiva</span>{% endif %}</div>
+                                {% else %}<span class="text-suave small">Pendiente de pago</span>{% endif %}
+                            </td>
+                            <td class="text-end fw-bold text-nowrap">{{ detalle.costo_matricula|clp }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-secundario-suave d-flex justify-content-between fs-5 fw-bold"><span>Total</span><span>{{ matricula.total|clp }}</span></div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        {# ===== RESUMEN ===== #}
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-person"></i> Estudiante</div>
+            <div class="card-body small">
+                <a href="{% url 'panel_usuario_detalle' matricula.estudiante.pk %}" class="fw-bold fs-6">{{ matricula.estudiante.nombre_completo }}</a>
+                <div class="text-suave">{{ matricula.estudiante.email }}</div>
+                <hr>
+                <div class="d-flex justify-content-between"><span>Creada</span><span>{{ matricula.creada_en|date:"d-m-Y H:i" }}</span></div>
+                <div class="d-flex justify-content-between"><span>Pagada</span><span>{{ matricula.pagada_en|date:"d-m-Y H:i"|default:"—" }}</span></div>
+                <div class="d-flex justify-content-between"><span>Actualizada</span><span>{{ matricula.actualizada_en|date:"d-m-Y H:i" }}</span></div>
+            </div>
+        </div>
+
+        {# ===== HISTORIAL DE ESTADOS ===== #}
+        <div class="card">
+            <div class="card-header"><i class="bi bi-clock-history"></i> Historial de estados</div>
+            <div class="card-body">
+                <ul class="linea-tiempo">
+                    {% for h in matricula.historial.all %}
+                    <li>
+                        <div>{% if h.estado_anterior %}<span class="{{ h.estado_anterior|clase_estado }}">{{ h.get_estado_anterior_display }}</span> <i class="bi bi-arrow-right"></i> {% endif %}<span class="{{ h.estado_nuevo|clase_estado }}">{{ h.get_estado_nuevo_display }}</span></div>
+                        <div class="small text-suave mt-1">{{ h.fecha|date:"d-m-Y H:i:s" }} · {{ h.cambiado_por.username|default:"Panel de gestión" }}</div>
+                        {% if h.observacion %}<div class="small">{{ h.observacion }}</div>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ===== MODAL DE CAMBIO DE ESTADO ===== #}
+<div class="modal fade" id="modalEstado" tabindex="-1" aria-labelledby="tituloModalEstado" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <form method="post" action="{% url 'panel_matricula_estado' matricula.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="estado" value="">
+            <div class="modal-header"><h2 class="modal-title h5" id="tituloModalEstado" data-modal-titulo>Cambiar estado</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+            <div class="modal-body">
+                <p data-modal-mensaje></p>
+                <label class="form-label" for="id_observacion">Observación</label>
+                <input type="text" name="observacion" id="id_observacion" maxlength="255" class="form-control" placeholder="Motivo del cambio (opcional)">
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Volver</button><button type="submit" class="btn btn-primary" data-modal-confirmar>Confirmar</button></div>
+        </form>
+    </div></div>
+</div>
+{% endblock %}
