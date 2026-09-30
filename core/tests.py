@@ -90,6 +90,49 @@ class FooterEnTodasLasPaginasTests(TestCase):
         self.assertEqual(datos["alumna"]["seccion"], settings.ALUMNO_SECCION)
 
 
+class EstaticosSinErrorTests(TestCase):
+    """El runserver propio no muestra el 404 de Django en /static/."""
+
+    def _manejador(self):
+        from django.core.handlers.wsgi import WSGIHandler
+
+        from core.management.commands.runserver import ManejadorEstaticosConRedireccion
+
+        return ManejadorEstaticosConRedireccion(WSGIHandler())
+
+    def test_runserver_del_proyecto_usa_el_manejador_propio(self):
+        from django.core.management import get_commands
+
+        from core.management.commands.runserver import Command, ManejadorEstaticosConRedireccion
+
+        self.assertEqual(get_commands()["runserver"], "core")
+        with self.settings(DEBUG=True):
+            handler = Command().get_handler(use_static_handler=True, insecure_serving=False)
+        self.assertIsInstance(handler, ManejadorEstaticosConRedireccion)
+
+    def test_estatico_inexistente_muestra_redireccion(self):
+        from django.test import RequestFactory
+
+        with self.settings(DEBUG=True):
+            for ruta in ("/static/noexiste.css", "/static/"):
+                with self.subTest(ruta=ruta):
+                    respuesta = self._manejador().get_response(RequestFactory().get(ruta))
+                    self.assertEqual(respuesta.status_code, 200)
+                    contenido = respuesta.content.decode()
+                    self.assertIn("La página que buscas no existe", contenido)
+                    self.assertIn(ruta, contenido)
+                    self.assertIn(settings.ALUMNO_NOMBRE, contenido)
+
+    def test_estatico_real_se_sirve(self):
+        from django.test import RequestFactory
+
+        with self.settings(DEBUG=True):
+            respuesta = self._manejador().get_response(RequestFactory().get("/static/css/tema.css"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertIn(b"--color-principal", b"".join(respuesta.streaming_content))
+        respuesta.close()
+
+
 class FormatoTests(TestCase):
     """Filtro |clp."""
 

@@ -35,8 +35,11 @@ NOMBRE_COMERCIAL = config("NOMBRE_COMERCIAL", default="CodeLab Academy")
 # APLICACIONES INSTALADAS
 # Apps de Django, librerías de terceros (DRF, JWT con blacklist,
 # django-filter, drf-spectacular) y las apps propias del dominio.
+# "core" va primero para que su comando runserver (que evita el 404
+# en /static/) reemplace al de django.contrib.staticfiles.
 # ============================================================
 INSTALLED_APPS = [
+    "core",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -50,8 +53,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "django_filters",
     "drf_spectacular",
-    # Propias
-    "core",
+    # Propias (core está al inicio de la lista)
     "usuarios.apps.UsuariosConfig",
     "cursos",
     "carro",

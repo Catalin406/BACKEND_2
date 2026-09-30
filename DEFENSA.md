@@ -10,8 +10,8 @@ Para cada indicador de la rúbrica: **dónde está** (archivo, clase o función 
 
 | Qué | Dónde |
 |---|---|
-| Motor PostgreSQL (psycopg 3), credenciales desde `.env` | `academia_bootcamps/settings.py:108` (`DATABASES`) |
-| Usuario personalizado | `settings.py:120` (`AUTH_USER_MODEL = "usuarios.Usuario"`) |
+| Motor PostgreSQL (psycopg 3), credenciales desde `.env` | `academia_bootcamps/settings.py:110` (`DATABASES`) |
+| Usuario personalizado | `settings.py:122` (`AUTH_USER_MODEL = "usuarios.Usuario"`) |
 | CHOICES `Rol` | `usuarios/models.py:16` |
 | `Usuario` + `save()` que sincroniza `is_staff` con el rol | `usuarios/models.py:29` y `:69` |
 | CHOICES `TipoCurso` y `Modalidad` | `cursos/models.py:16` y `:24` |
@@ -35,8 +35,8 @@ Para cada indicador de la rúbrica: **dónde está** (archivo, clase o función 
 
 | Qué | Dónde |
 |---|---|
-| Configuración `SIMPLE_JWT` (30 min / 1 día / rotación / blacklist) | `academia_bootcamps/settings.py:188` |
-| `REST_FRAMEWORK` (JWT, `IsAuthenticated` por defecto, filtros, paginación, handler) | `settings.py:165` |
+| Configuración `SIMPLE_JWT` (30 min / 1 día / rotación / blacklist) | `academia_bootcamps/settings.py:190` |
+| `REST_FRAMEWORK` (JWT, `IsAuthenticated` por defecto, filtros, paginación, handler) | `settings.py:167` |
 | `TokenConRolSerializer.get_token()` agrega `rol`, `username`, `email`, `nombre_completo` | `usuarios/tokens.py:11`, `:23` |
 | Respuesta del login con `rol` y `usuario` | `usuarios/tokens.py:36` |
 | `LoginConRolView` | `usuarios/views.py:64` |
@@ -97,7 +97,7 @@ Para cada indicador de la rúbrica: **dónde está** (archivo, clase o función 
 | Uso en la API con búsqueda y orden | `cursos/views.py:110`–`:111` |
 | Reutilización en la oferta HTML | `cursos/views_html.py:34` |
 | `MatriculaFilter` e `InscripcionFilter` | `matriculas/filtros.py:16`, `:37`; uso en `matriculas/views.py:127`, `:177` |
-| `SPECTACULAR_SETTINGS` (descripción con alumna, roles y credenciales; `persistAuthorization`) | `settings.py:203`, `:205`, `:234` |
+| `SPECTACULAR_SETTINGS` (descripción con alumna, roles y credenciales; `persistAuthorization`) | `settings.py:205`, `:207`, `:236` |
 | Ejemplos `OpenApiExample` (login, agregar curso, duplicado 400, confirmar 201, sin cupos 409, cambio de estado) | `usuarios/views.py:50`; `carro/views.py:52`; `matriculas/views.py:50`, `:66`, `:141` |
 | Rutas `/api/schema/`, `/api/docs/`, `/api/redoc/` | `academia_bootcamps/urls.py` |
 | Swagger y ReDoc con footer | `templates/drf_spectacular/swagger_ui.html`, `redoc.html` |
@@ -110,23 +110,24 @@ Para cada indicador de la rúbrica: **dónde está** (archivo, clase o función 
 
 | Qué | Dónde |
 |---|---|
-| Context processor con datos de la alumna desde `.env` | `core/context_processors.py:10`, registrado en `settings.py:94` |
+| Context processor con datos de la alumna desde `.env` | `core/context_processors.py:10`, registrado en `settings.py:96` |
 | Footer en todas las pantallas | `templates/parciales/footer.html:9` (incluido en `base.html`, Swagger, ReDoc y `rest_framework/api.html`) |
 | Paleta en variables CSS que sobrescriben Bootstrap | `static/css/tema.css:14` (paleta) y `:59` (`--bs-primary`) |
 | Filtro `|clp` | `core/templatetags/formato.py` |
 | Catch-all y `handler404` | `academia_bootcamps/urls.py:73`, `:75` |
 | Middleware contra 404 (incluso con DEBUG=True) | `core/middleware.py:11`, `:22`, `:30` |
 | Barra final (`/cursos` → `/cursos/`) con `resolve()` | `core/views.py:122`, `:131` |
+| `runserver` propio: `/static/` inexistente también va a la redirección | `core/management/commands/runserver.py` (`ManejadorEstaticosConRedireccion`); `core` primero en `INSTALLED_APPS` |
 | Helper `obtener_o_redirigir` (sin `get_object_or_404`) | `core/utilidades.py:21` |
-| Pruebas: 59, todas aprobadas | `*/tests.py` |
+| Pruebas: 62, todas aprobadas | `*/tests.py` |
 
-**Cómo explicarlo:** "Cada archivo empieza con un bloque que explica su responsabilidad. Los datos de la alumna nunca están escritos en las plantillas: llegan del `.env` mediante el context processor. Ninguna ruta muestra el 404: hay tres capas (catch-all, `handler404` y middleware), y las pruebas lo comprueban con más de 8 rutas absurdas."
+**Cómo explicarlo:** "Cada archivo empieza con un bloque que explica su responsabilidad. Los datos de la alumna nunca están escritos en las plantillas: llegan del `.env` mediante el context processor. Ninguna ruta muestra el 404: hay tres capas (catch-all, `handler404` y middleware), y las pruebas lo comprueban con más de 8 rutas absurdas. Como el servidor de desarrollo atiende `/static/` antes que las URLs, sobrescribí `runserver` con un manejador de estáticos propio que, si el archivo no existe, muestra la misma pantalla de redirección."
 
 ---
 
 ## Guion de demo (5 minutos)
 
-1. **(30 s) Inicio** — `http://127.0.0.1:8000/`: portada con estadísticas reales, footer con nombre, sección y año. Mostrar `settings.py:108` (PostgreSQL).
+1. **(30 s) Inicio** — `http://127.0.0.1:8000/`: portada con estadísticas reales, footer con nombre, sección y año. Mostrar `settings.py:110` (PostgreSQL).
 2. **(45 s) Oferta** — `/cursos/`: filtrar por *Bootcamp* y *Con cupos disponibles*. Abrir un curso: barra de ocupación.
 3. **(60 s) Swagger** — `/api/docs/`: `POST /api/auth/login/` con `estudiante2`; pegar el `access` en **jwt.io** para mostrar el claim `rol`; **Authorize**.
 4. **(60 s) Carro** — `GET /api/carro-matricula/` (ya tiene el *Taller de Pentesting*, último cupo). `POST` del mismo curso → **400 duplicado**. `POST /api/matriculas/confirmar/` → **201**, estado `PAGADO`, códigos UUID. El taller ahora tiene 0 cupos.

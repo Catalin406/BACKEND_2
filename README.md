@@ -246,7 +246,7 @@ Sin token → **401**. Con token pero con otro rol → **403**. Errores en JSON 
 | `/panel/matriculas/`, `/panel/inscripciones/` | Matrículas con historial y cambio de estado; inscripciones UUID |
 | `/documentacion/` | Guía del sistema |
 
-Las rutas inexistentes (`/asdf`, `/api/xyz`, `/panel/cursos/999999/`) nunca muestran el 404 de Django: terminan en una pantalla que vuelve al inicio en 3 segundos. `/cursos` redirige a `/cursos/`.
+Las rutas inexistentes (`/asdf`, `/api/xyz`, `/panel/cursos/999999/`, incluso `/static/noexiste.css` gracias al `runserver` propio de `core`) nunca muestran el 404 de Django: terminan en una pantalla que vuelve al inicio en 3 segundos. `/cursos` redirige a `/cursos/`.
 
 ---
 
