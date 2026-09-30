@@ -1,16 +1,11 @@
-"""
-ASGI config for academia_bootcamps project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
-"""
-
+# ============================================================
+# ACADEMIA_BOOTCAMPS/ASGI.PY / PUNTO DE ENTRADA ASGI
+# Expone "application" para servidores ASGI (uvicorn, daphne).
+# ============================================================
 import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'academia_bootcamps.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "academia_bootcamps.settings")
 
 application = get_asgi_application()

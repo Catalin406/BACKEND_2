@@ -1,16 +1,11 @@
-"""
-WSGI config for academia_bootcamps project.
-
-It exposes the WSGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
-"""
-
+# ============================================================
+# ACADEMIA_BOOTCAMPS/WSGI.PY / PUNTO DE ENTRADA WSGI
+# Expone "application" para servidores WSGI (gunicorn, mod_wsgi).
+# ============================================================
 import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'academia_bootcamps.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "academia_bootcamps.settings")
 
 application = get_wsgi_application()

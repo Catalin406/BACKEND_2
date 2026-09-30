@@ -331,6 +331,7 @@ a:hover { text-decoration: underline; }
     font-size: 0.78rem;
     font-weight: 800;
     letter-spacing: 0.02em;
+    white-space: nowrap;
 }
 .badge-estado-pendiente { background: var(--estado-pendiente-fondo); color: var(--estado-pendiente-texto); }
 .badge-estado-pagado { background: var(--estado-pagado-fondo); color: var(--estado-pagado-texto); }
