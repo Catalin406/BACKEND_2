@@ -249,6 +249,8 @@ class Command(BaseCommand):
         )
 
         # Estudiante 2: matrícula PENDIENTE (pago aún no aprobado: no descuenta cupos ni emite inscripciones).
+        # Es la que se usa para demostrar el pago con Webpay: el Coordinador entra a su detalle en el
+        # panel y presiona "Pagar con Webpay" (el curso de ML tiene 25 cupos, así que el pago se aprueba).
         with transaction.atomic():
             pendiente = Matricula.objects.create(estudiante=e2)
             DetalleMatricula.objects.create(

@@ -9,6 +9,8 @@ from datetime import timedelta
 from pathlib import Path
 
 from decouple import Csv, config
+from transbank.common.integration_api_keys import IntegrationApiKeys
+from transbank.common.integration_commerce_codes import IntegrationCommerceCodes
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,6 +22,37 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
+
+# ============================================================
+# DESPLIEGUE DETRÁS DE NGINX CON HTTPS
+# CSRF_TRUSTED_ORIGINS: orígenes https que Django acepta en los POST
+# (ej.: https://mi-sitio.duckdns.org). En local queda vacío.
+# DETRAS_DE_PROXY_HTTPS=True se activa SOLO en el servidor: Nginx
+# termina el HTTPS y avisa con X-Forwarded-Proto; Django lo cree para
+# armar URLs https (necesario para la return_url de Webpay) y marca las
+# cookies como seguras. HSTS bajo (1 hora, sin preload) para poder
+# corregir errores de HTTPS sin dejar el sitio bloqueado en los navegadores.
+# ============================================================
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="", cast=Csv())
+DETRAS_DE_PROXY_HTTPS = config("DETRAS_DE_PROXY_HTTPS", default=False, cast=bool)
+if DETRAS_DE_PROXY_HTTPS:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 3600
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+
+# ============================================================
+# TRANSBANK WEBPAY PLUS
+# Por defecto usa el AMBIENTE DE INTEGRACIÓN con las constantes públicas
+# del SDK (no mueve dinero real). Para cambiar de ambiente se definen
+# las tres variables en .env; nunca se escriben claves en el código.
+# TRANSBANK_AMBIENTE: "integracion" (pruebas) o "produccion" (real).
+# ============================================================
+TRANSBANK_AMBIENTE = config("TRANSBANK_AMBIENTE", default="integracion")
+TRANSBANK_CODIGO_COMERCIO = config("TRANSBANK_CODIGO_COMERCIO", default=IntegrationCommerceCodes.WEBPAY_PLUS)
+TRANSBANK_API_KEY = config("TRANSBANK_API_KEY", default=IntegrationApiKeys.WEBPAY)
 
 # ============================================================
 # DATOS DE LA ALUMNA Y NOMBRE COMERCIAL
@@ -58,6 +91,7 @@ INSTALLED_APPS = [
     "cursos",
     "carro",
     "matriculas",
+    "pagos",
 ]
 
 # ============================================================
@@ -226,7 +260,7 @@ API REST de la plataforma de reservas de cursos y bootcamps **{NOMBRE_COMERCIAL}
 | Rol | Endpoints |
 |---|---|
 | Público | `GET /api/cursos/`, `GET /api/areas/` |
-| Estudiante | `GET/POST/DELETE /api/carro-matricula/`, `POST /api/matriculas/confirmar/`, `GET /api/mis-matriculas/` |
+| Estudiante | `GET/POST/DELETE /api/carro-matricula/`, `POST /api/matriculas/confirmar/`, `POST /api/matriculas/webpay/iniciar/`, `POST /api/matriculas/{{id}}/webpay/iniciar/`, `GET /api/mis-matriculas/` |
 | Coordinador | `POST/PUT/DELETE /api/cursos/`, `PATCH /api/matriculas/{{id}}/estado/` |
 
 ### Credenciales de prueba
@@ -253,6 +287,7 @@ API REST de la plataforma de reservas de cursos y bootcamps **{NOMBRE_COMERCIAL}
         {"name": "Oferta académica", "description": "Áreas de conocimiento y cursos/bootcamps."},
         {"name": "Carro de matrícula", "description": "Carro persistente del estudiante (1 a 1)."},
         {"name": "Matrículas", "description": "Confirmación, estados, cupos e inscripciones UUID."},
+        {"name": "Pagos Webpay", "description": "Pago de matrículas con Transbank Webpay Plus (ambiente de integración)."},
         {"name": "Usuarios", "description": "Administración de usuarios (solo coordinador)."},
         {"name": "General", "description": "Raíz de la API."},
     ],

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   PAGOS/REDIRECCION_WEBPAY.HTML / ENVÍO AL FORMULARIO DE WEBPAY
+   Webpay exige que el navegador envíe el token_ws por POST a la
+   url que devolvió Transbank. Este formulario se envía solo al
+   cargar; el botón queda por si JavaScript está desactivado.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Redirigiendo a Webpay{% endblock %}
+{% block migas %}<li class="breadcrumb-item active" aria-current="page">Pago Webpay</li>{% endblock %}
+{% block titulo_pagina %}Redirigiendo a Webpay{% endblock %}
+{% block subtitulo %}Ambiente de integración de Transbank: no se cobra dinero real.{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card"><div class="card-body p-4 text-center">
+            <i class="bi bi-credit-card-2-front display-4 text-principal"></i>
+            <p class="mt-3 fs-5">Te estamos llevando a Webpay para pagar {{ pago.monto|clp }}…</p>
+            {# No lleva csrf_token: el destino es otro dominio (Transbank) #}
+            <form method="post" action="{{ url }}" id="formWebpay">
+                <input type="hidden" name="token_ws" value="{{ token }}">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-up-right"></i> Ir a Webpay</button>
+            </form>
+        </div></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>document.getElementById("formWebpay").submit();</script>
+{% endblock %}

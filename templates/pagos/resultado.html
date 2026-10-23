@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load formato %}
+{% comment %} ============================================================
+   PAGOS/RESULTADO.HTML / RESULTADO DEL PAGO CON WEBPAY PLUS
+   Aprobado, rechazado, anulado, expirado, reembolsado o con error.
+   Muestra código de autorización, últimos 4 dígitos y monto. Es
+   pública (la ve el estudiante al volver de Webpay) y solo muestra
+   los datos del pago al que apunta el token.
+   ============================================================ {% endcomment %}
+
+{% block titulo %}Resultado del pago{% endblock %}
+{% block migas %}<li class="breadcrumb-item active" aria-current="page">Resultado del pago</li>{% endblock %}
+{% block titulo_pagina %}Resultado del pago{% endblock %}
+{% block subtitulo %}Pago con Transbank Webpay Plus (ambiente de integración, sin dinero real).{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-7">
+        <div class="card">
+            <div class="card-body p-4">
+                {% if error %}
+                {# ===== NO SE PUDO IDENTIFICAR EL PAGO ===== #}
+                <div class="text-center">
+                    <i class="bi bi-question-circle display-4 text-principal"></i>
+                    <h2 class="h4 mt-3">No pudimos mostrar el pago</h2>
+                    <p class="text-suave">{{ error }}</p>
+                </div>
+                {% else %}
+                {# ===== ENCABEZADO SEGÚN EL ESTADO ===== #}
+                <div class="text-center mb-4">
+                    {% if pago.estado == estados.APROBADO %}
+                    <i class="bi bi-check-circle-fill display-4 text-acento"></i>
+                    <h2 class="h4 mt-3">¡Pago aprobado!</h2>
+                    <p class="text-suave mb-0">Tu matrícula quedó <strong>pagada</strong> y tus inscripciones fueron emitidas.</p>
+                    {% elif pago.estado == estados.RECHAZADO %}
+                    <i class="bi bi-x-circle-fill display-4 text-principal"></i>
+                    <h2 class="h4 mt-3">Pago rechazado</h2>
+                    <p class="text-suave mb-0">Transbank no autorizó la tarjeta. No se te cobró nada y la matrícula sigue pendiente: puedes intentar de nuevo.</p>
+                    {% elif pago.estado == estados.ANULADO_POR_USUARIO %}
+                    <i class="bi bi-slash-circle display-4 text-principal"></i>
+                    <h2 class="h4 mt-3">Pago anulado</h2>
+                    <p class="text-suave mb-0">Cancelaste el pago en Webpay. No se te cobró nada y la matrícula sigue pendiente.</p>
+                    {% elif pago.estado == estados.EXPIRADO %}
+                    <i class="bi bi-hourglass-bottom display-4 text-principal"></i>
+                    <h2 class="h4 mt-3">Se agotó el tiempo</h2>
+                    <p class="text-suave mb-0">No completaste el pago a tiempo. No se te cobró nada y la matrícula sigue pendiente.</p>
+                    {% elif pago.estado == estados.REEMBOLSADO %}
+                    <i class="bi bi-arrow-counterclockwise display-4 text-principal"></i>
+                    <h2 class="h4 mt-3">Pago reembolsado</h2>
+                    <p class="text-suave mb-0">{{ motivo }} Te devolvimos el dinero y la matrícula sigue <strong>pendiente</strong>.</p>
+                    {% elif pago.estado == estados.INICIADO %}
+                    <i class="bi bi-hourglass-split display-4 text-principal"></i>
+                    <h2 class="h4 mt-3">Pago en proceso</h2>
+                    <p class="text-suave mb-0">Aún no recibimos la respuesta de Webpay.</p>
+                    {% else %}
+                    <i class="bi bi-exclamation-triangle-fill display-4 text-principal"></i>
+                    <h2 class="h4 mt-3">No pudimos confirmar el pago</h2>
+                    <p class="text-suave mb-0">{% if motivo %}{{ motivo }}{% else %}Ocurrió un problema al confirmar con Webpay.{% endif %} La matrícula sigue pendiente; si te cobraron, contacta a la academia con tu orden de compra.</p>
+                    {% endif %}
+                </div>
+
+                {# ===== DETALLE DEL PAGO ===== #}
+                <ul class="list-group list-group-flush small mb-4">
+                    <li class="list-group-item d-flex justify-content-between"><span>Estado del pago</span><strong>{{ pago.get_estado_display }}</strong></li>
+                    <li class="list-group-item d-flex justify-content-between"><span>Monto</span><strong>{{ pago.monto|clp }}</strong></li>
+                    <li class="list-group-item d-flex justify-content-between"><span>Orden de compra</span><span class="codigo-uuid">{{ pago.buy_order }}</span></li>
+                    {% if pago.authorization_code %}
+                    <li class="list-group-item d-flex justify-content-between"><span>Código de autorización</span><strong>{{ pago.authorization_code }}</strong></li>
+                    {% endif %}
+                    {% if pago.card_number %}
+                    <li class="list-group-item d-flex justify-content-between"><span>Tarjeta</span><strong>**** **** **** {{ pago.card_number }}</strong></li>
+                    {% endif %}
+                    <li class="list-group-item d-flex justify-content-between"><span>Matrícula</span><span>{{ matricula.get_estado_display }}</span></li>
+                </ul>
+                {% endif %}
+
+                <div class="d-flex flex-wrap justify-content-center gap-2">
+                    {% if matricula %}
+                    <a href="{% url 'panel_matricula_detalle' matricula.pk %}" class="btn btn-primary"><i class="bi bi-receipt"></i> Ver la matrícula</a>
+                    {% endif %}
+                    <a href="{% url 'inicio' %}" class="btn btn-outline-secondary"><i class="bi bi-house-heart"></i> Volver al inicio</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

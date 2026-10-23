@@ -16,6 +16,13 @@
 {% block titulo_pagina %}Matrícula <span class="{{ matricula.estado|clase_estado }} align-middle">{{ matricula.get_estado_display }}</span>{% endblock %}
 {% block subtitulo %}Código: <span class="codigo-uuid">{{ matricula.codigo }}</span>{% endblock %}
 {% block acciones %}
+{# Pago real de prueba: solo el Coordinador con sesión puede iniciarlo desde el panel #}
+{% if matricula.estado == 'PENDIENTE' and user.is_authenticated and user.is_staff %}
+<form method="post" action="{% url 'panel_pagar_webpay' matricula.pk %}" class="d-inline">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary"><i class="bi bi-credit-card"></i> Pagar con Webpay</button>
+</form>
+{% endif %}
 {% if puede_completar %}
 <button type="button" class="btn btn-exito" data-bs-toggle="modal" data-bs-target="#modalEstado"
         data-estado="COMPLETADO" data-titulo="Marcar como completada" data-boton="Sí, marcar completada" data-clase="btn-exito"

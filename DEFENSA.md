@@ -119,7 +119,7 @@ Para cada indicador de la rúbrica: **dónde está** (archivo, clase o función 
 | Barra final (`/cursos` → `/cursos/`) con `resolve()` | `core/views.py:122`, `:131` |
 | `runserver` propio: `/static/` inexistente también va a la redirección | `core/management/commands/runserver.py` (`ManejadorEstaticosConRedireccion`); `core` primero en `INSTALLED_APPS` |
 | Helper `obtener_o_redirigir` (sin `get_object_or_404`) | `core/utilidades.py:21` |
-| Pruebas: 69, todas aprobadas | `*/tests.py` |
+| Pruebas: 102, todas aprobadas | `*/tests.py` |
 
 **Cómo explicarlo:** "Cada archivo empieza con un bloque que explica su responsabilidad. Los datos de la alumna nunca están escritos en las plantillas: llegan del `.env` mediante el context processor. Ninguna ruta muestra el 404: hay tres capas (catch-all, `handler404` y middleware), y las pruebas lo comprueban con más de 8 rutas absurdas. Como el servidor de desarrollo atiende `/static/` antes que las URLs, sobrescribí `runserver` con un manejador de estáticos propio que, si el archivo no existe, muestra la misma pantalla de redirección."
 
@@ -149,6 +149,54 @@ Para cada indicador de la rúbrica: **dónde está** (archivo, clase o función 
 **Por qué la lectura queda abierta.** La pauta del caso define lectura pública (ver oferta, cursos, matrículas) y escritura solo para el Coordinador Académico. El mismo criterio ya existía en la API con `EsCoordinadorOSoloLectura`; ahora el panel HTML lo respeta igual. Los formularios (GET) se pueden ver, pero guardarlos (POST) exige sesión.
 
 **Cómo explicarlo:** "El panel y la API aplican la misma regla: leer es público, escribir es del coordinador. La API lo hace con JWT y el panel con sesión y un decorador. Las pruebas comprueban que un visitante y un estudiante logueado reciben una redirección al login y que no cambia nada en la base de datos."
+
+---
+
+## 8. Pago con Transbank Webpay Plus
+
+| Qué | Dónde |
+|---|---|
+| Separación del checkout en dos pasos | `matriculas/servicios.py`: `crear_matricula_pendiente`, `pagar_matricula`, `confirmar_matricula` |
+| Modelo del intento de pago | `pagos/models.py` (`PagoWebpay`, `EstadoPago`) |
+| Iniciar, confirmar (commit), reembolso, 4 casos de retorno | `pagos/servicios.py` |
+| Retorno desde Webpay (`csrf_exempt`) | `pagos/views_html.py` (`webpay_retorno`) → `/pagos/webpay/retorno/` |
+| API del estudiante | `pagos/views.py` → `POST /api/matriculas/webpay/iniciar/` y `POST /api/matriculas/{id}/webpay/iniciar/` |
+| Botón del coordinador | `templates/matriculas/matricula_detalle.html` → `POST /panel/matriculas/{id}/pagar-webpay/` |
+| Configuración | `settings.py`: `TRANSBANK_*`, `CSRF_TRUSTED_ORIGINS`, `DETRAS_DE_PROXY_HTTPS` (valores en `.env.example`) |
+| Pruebas con `mock` (sin llamar a Transbank) | `pagos/tests.py` |
+
+**Por qué hubo que separar `confirmar_matricula`.** Antes, una sola función creaba la matrícula **y** la pagaba (pago simulado). Con un pago real hay un paso intermedio: el estudiante sale a Webpay, y solo cuando Transbank aprueba se debe descontar el cupo. Por eso ahora hay dos funciones: `crear_matricula_pendiente` (arma la orden con costos congelados, sin tocar cupos ni el carro) y `pagar_matricula` (descuenta cupos, crea inscripciones, vacía el carro). `confirmar_matricula` es la suma de ambas en una transacción, así la API simulada de siempre y todas sus pruebas siguen igual.
+
+**Flujo paso a paso.**
+1. **Tienda:** el estudiante (API) o el coordinador (panel) pide pagar una matrícula PENDIENTE. El servidor calcula el monto desde los costos congelados (el cliente nunca envía el monto), llama a Transbank (`create`) y guarda un `PagoWebpay` INICIADO con el token.
+2. **Webpay:** el navegador envía `token_ws` por POST al formulario de Webpay y el estudiante paga con su tarjeta.
+3. **Retorno:** Webpay devuelve al navegador a `/pagos/webpay/retorno/`.
+4. **Commit:** el servidor le pregunta a Transbank directamente (`commit`) si el pago se autorizó. Nunca se confía en lo que dice el navegador.
+5. **`pagar_matricula`:** si el estado es `AUTHORIZED` y `response_code == 0`, la matrícula pasa a PAGADO, se descuenta 1 cupo por curso y se emiten las inscripciones UUID.
+
+**Los 4 retornos de Webpay Plus.** Normal (`token_ws`); anulado por el usuario (`TBK_TOKEN` + `TBK_ORDEN_COMPRA` + `TBK_ID_SESION`, sin cobro); tiempo agotado (solo `TBK_ORDEN_COMPRA` + `TBK_ID_SESION`); y error de formulario (`token_ws` + `TBK_TOKEN`). Los tres últimos nunca hacen commit.
+
+**Por qué el retorno es `csrf_exempt`.** El formulario lo envía Transbank desde otro dominio, así que no puede llevar nuestro token CSRF y Django lo bloquearía. Es seguro porque nada de lo que llega se acepta a ciegas: el `token_ws` solo sirve para preguntarle a Transbank, de servidor a servidor, qué ocurrió. Si alguien inventa un token, solo obtiene "pago no encontrado". Además `CSRF_TRUSTED_ORIGINS` y las cookies seguras se configuran por `.env` para el servidor con HTTPS.
+
+**Idempotencia.** Si el retorno llega dos veces (el usuario recarga, o Webpay reintenta), el segundo intento no cobra ni descuenta nada: el servicio bloquea la fila del pago (`select_for_update`), y si ya no está INICIADO devuelve el resultado guardado sin llamar a Transbank. Es la misma idea de los cupos: el bloqueo hace que las operaciones simultáneas se turnen.
+
+**Qué pasa si no quedan cupos (caso crítico).** Entre que el estudiante sale a Webpay y vuelve, otro estudiante pudo tomar el último cupo. Transbank ya cobró, pero `pagar_matricula` revalida y lanza `SinCuposError`. Entonces el sistema hace un **refund automático** del total en Transbank, el pago queda REEMBOLSADO y la matrícula sigue PENDIENTE con un mensaje claro. La regla es general: ante **cualquier** fallo después de un cobro aprobado (sin cupos, curso inactivo, ya inscrito, matrícula ya pagada por otro intento, monto distinto, error inesperado) se devuelve el dinero. Nunca queda un cobro aprobado sin que su matrícula esté PAGADA por ese mismo pago. Si hasta el refund fallara, el pago queda en ERROR con la marca `reembolso_pendiente` en `respuesta_cruda` y un log crítico, para resolverlo a mano.
+
+**Doble pago.** Se permite iniciar varias transacciones de la misma matrícula (reintentos). Si dos se aprueban, la primera paga la matrícula; la segunda encuentra la matrícula ya PAGADA, lanza `TransicionInvalidaError` y se reembolsa. Hay una prueba para esto.
+
+**Credenciales y tarjetas de prueba (ambiente de integración, sin dinero real).** Las credenciales son las constantes públicas del SDK (`IntegrationCommerceCodes.WEBPAY_PLUS` = `597055555532` y `IntegrationApiKeys.WEBPAY`); no hay claves en el código. Tarjetas de la documentación oficial de Transbank Developers (https://www.transbankdevelopers.cl/documentacion/como_empezar#tarjetas-de-prueba):
+
+| Resultado | Tarjeta | CVV | Vencimiento |
+|---|---|---|---|
+| Aprobada | VISA `4051 8856 0044 6623` | 123 | cualquiera |
+| Aprobada | AMEX `3700 0000 0002 032` | 1234 | cualquiera |
+| Rechazada | MASTERCARD `5186 0595 5959 0568` | 123 | cualquiera |
+| Débito Redcompra aprobada | `4051 8842 3993 7763` | — | — |
+| Débito Redcompra rechazada | `5186 0085 4123 3829` | — | — |
+
+En el simulador del banco que aparece después: RUT `11.111.111-1` y clave `123`.
+
+**Cómo explicarlo:** "Separé el checkout en crear la orden y pagarla, porque con un pago real hay un paso en medio. Solo descuento cupos cuando Transbank confirma por commit, de servidor a servidor. Si el cobro sale bien pero ya no hay cupo, devuelvo el dinero automáticamente, y todo el retorno es idempotente."
 
 ---
 

@@ -18,6 +18,7 @@ from carro import urls as carro_urls
 from core import views as core_views
 from cursos import urls as cursos_urls
 from matriculas import urls as matriculas_urls
+from pagos import urls as pagos_urls
 from usuarios import urls as usuarios_urls
 
 # ============================================================
@@ -28,6 +29,7 @@ urlpatterns = [
     path("documentacion/", core_views.documentacion, name="documentacion"),
     path("no-encontrado/", core_views.no_encontrado, name="no_encontrado"),
     path("cursos/", include(cursos_urls.urlpatterns_publico)),
+    path("pagos/", include(pagos_urls.urlpatterns_publico)),
     path("panel/", core_views.panel, name="panel"),
     path(
         "panel/",
@@ -36,6 +38,7 @@ urlpatterns = [
             + usuarios_urls.urlpatterns_html
             + carro_urls.urlpatterns_html
             + matriculas_urls.urlpatterns_html
+            + pagos_urls.urlpatterns_panel
         ),
     ),
     path("admin/", admin.site.urls),
@@ -55,6 +58,7 @@ urlpatterns += [
             usuarios_urls.urlpatterns_api
             + cursos_urls.urlpatterns_api
             + carro_urls.urlpatterns_api
+            + pagos_urls.urlpatterns_api
             + matriculas_urls.urlpatterns_api
         ),
     ),

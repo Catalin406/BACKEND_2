@@ -38,6 +38,7 @@ academia-bootcamps/
 ├── cursos/               AreaConocimiento, Curso, CursoFilter, API y vistas HTML
 ├── carro/                CarroMatricula, ItemCarroMatricula, servicios del carro
 ├── matriculas/           Matricula, DetalleMatricula, Inscripcion, Historial, servicios de cupos
+├── pagos/                PagoWebpay, integración con Transbank Webpay Plus, retorno y API de inicio de pago
 ├── templates/            base.html, parciales/, páginas por app, Swagger/ReDoc/Browsable API con footer
 └── static/               css/tema.css (paleta), js/app.js, img/favicon.svg
 ```
@@ -209,7 +210,8 @@ python manage.py simular_concurrencia
 | POST/PUT/PATCH/DELETE | `/api/cursos/…`, POST `/api/cursos/{id}/reactivar/` | **Coordinador** |
 | GET/POST/DELETE | `/api/carro-matricula/` | **Estudiante** |
 | DELETE | `/api/carro-matricula/items/{curso_id}/` | Estudiante |
-| POST | `/api/matriculas/confirmar/` | **Estudiante** |
+| POST | `/api/matriculas/confirmar/` | **Estudiante** (pago simulado) |
+| POST | `/api/matriculas/webpay/iniciar/`, `/api/matriculas/{id}/webpay/iniciar/` | **Estudiante** (pago real de prueba con Webpay Plus; ajena → 403) |
 | GET | `/api/mis-matriculas/`, `/api/mis-matriculas/{id}/` | **Estudiante** (solo las propias) |
 | GET | `/api/matriculas/`, `/api/matriculas/{id}/` | Coordinador |
 | PATCH | `/api/matriculas/{id}/estado/` | **Coordinador** |
@@ -250,6 +252,19 @@ Sin token → **401**. Con token pero con otro rol → **403**. Errores en JSON 
 Ver cualquier página del panel es público (GET); crear, editar, desactivar, cambiar estados y confirmar matrículas (POST) exigen sesión de Coordinador: un visitante o un estudiante son redirigidos al login.
 
 Las rutas inexistentes (`/asdf`, `/api/xyz`, `/panel/cursos/999999/`, incluso `/static/noexiste.css` gracias al `runserver` propio de `core`) nunca muestran el 404 de Django: terminan en una pantalla que vuelve al inicio en 3 segundos. `/cursos` redirige a `/cursos/`.
+
+---
+
+## Pago con Transbank Webpay Plus (ambiente de integración)
+
+El pago real de prueba usa Webpay Plus con las credenciales públicas del SDK (`transbank-sdk==6.1.0`); no se cobra dinero real. El pago simulado de siempre (`POST /api/matriculas/confirmar/`) sigue funcionando.
+
+- **Estudiante (API):** `POST /api/matriculas/webpay/iniciar/` (desde el carro) o `POST /api/matriculas/{id}/webpay/iniciar/` devuelven `url` y `token`; el cliente envía un formulario POST con `token_ws` a esa `url`.
+- **Coordinador (panel):** en el detalle de una matrícula **Pendiente**, botón **Pagar con Webpay** (requiere iniciar sesión en `/panel/login/`). Los datos de prueba incluyen una matrícula pendiente de `estudiante2`.
+- **Retorno:** Webpay vuelve a `/pagos/webpay/retorno/`, el servidor confirma con Transbank (`commit`) y recién entonces descuenta cupos. Si el pago se aprueba pero ya no hay cupos, se reembolsa automáticamente.
+- **Tarjeta de prueba aprobada:** VISA `4051 8856 0044 6623`, CVV `123`, cualquier vencimiento; en el simulador del banco RUT `11.111.111-1` y clave `123`. Rechazada: MASTERCARD `5186 0595 5959 0568`. Más datos en `DEFENSA.md`.
+- **Configuración (`.env`):** `TRANSBANK_AMBIENTE`, `TRANSBANK_CODIGO_COMERCIO`, `TRANSBANK_API_KEY` (omitirlas = integración), `CSRF_TRUSTED_ORIGINS` y `DETRAS_DE_PROXY_HTTPS` (solo en el servidor con Nginx + HTTPS). Ver `.env.example`.
+- **Producción del servidor:** `gunicorn` está en `requirements.txt` (no corre en Windows; es para Ubuntu).
 
 ---
 
