@@ -14,6 +14,7 @@ from matriculas.models import Matricula
 
 from .forms import UsuarioForm
 from .models import Rol, Usuario
+from .permisos import solo_coordinador_para_escribir
 
 
 def usuario_lista(request):
@@ -30,6 +31,7 @@ def usuario_lista(request):
     })
 
 
+@solo_coordinador_para_escribir
 def usuario_crear(request):
     """Formulario de nuevo usuario (con rol y contraseña)."""
     form = UsuarioForm(request.POST or None)
@@ -52,6 +54,7 @@ def usuario_detalle(request, pk):
     return render(request, "usuarios/usuario_detalle.html", contexto)
 
 
+@solo_coordinador_para_escribir
 def usuario_editar(request, pk):
     """Formulario de edición (contraseña opcional)."""
     usuario, redireccion = obtener_o_redirigir(request, Usuario, pk=pk)
@@ -80,11 +83,13 @@ def _cambiar_usuario(request, pk, activar):
     )
 
 
+@solo_coordinador_para_escribir
 def usuario_desactivar(request, pk):
     """Baja lógica del usuario (is_active=False)."""
     return _cambiar_usuario(request, pk, activar=False)
 
 
+@solo_coordinador_para_escribir
 def usuario_reactivar(request, pk):
     """Reactiva un usuario."""
     return _cambiar_usuario(request, pk, activar=True)

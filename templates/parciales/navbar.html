@@ -46,6 +46,19 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'swagger' %}"><i class="bi bi-braces"></i> API</a>
                 </li>
+                {# ===== SESIÓN DEL PANEL ===== #}
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <form method="post" action="{% url 'panel_logout' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link btn btn-link"><i class="bi bi-box-arrow-right"></i> Salir ({{ user.username }})</button>
+                    </form>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link {% if ruta == '/panel/login/' %}active{% endif %}" href="{% url 'panel_login' %}"><i class="bi bi-box-arrow-in-right"></i> Ingresar</a>
+                </li>
+                {% endif %}
             </ul>
         </div>
     </div>

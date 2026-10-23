@@ -5,11 +5,12 @@
 # obligatoria; al editar, es opcional.
 # ============================================================
 from django import forms
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.password_validation import validate_password
 
 from core.forms import FormularioBootstrapMixin
 
-from .models import Usuario
+from .models import Rol, Usuario
 
 
 class UsuarioForm(FormularioBootstrapMixin, forms.ModelForm):
@@ -56,3 +57,21 @@ class UsuarioForm(FormularioBootstrapMixin, forms.ModelForm):
         if commit:
             usuario.save()
         return usuario
+
+
+# ============================================================
+# LOGIN DEL PANEL
+# Solo el Coordinador Académico puede iniciar sesión en el panel.
+# confirm_login_allowed corre después de validar la contraseña, así
+# que el mensaje no revela si una cuenta existe a quien no la conoce.
+# ============================================================
+class LoginPanelForm(FormularioBootstrapMixin, AuthenticationForm):
+    """AuthenticationForm que rechaza a quien no sea coordinador."""
+
+    def confirm_login_allowed(self, user):
+        super().confirm_login_allowed(user)
+        if not (user.is_staff and user.rol == Rol.COORDINADOR):
+            raise forms.ValidationError(
+                "Solo el Coordinador Académico puede iniciar sesión en el panel de gestión.",
+                code="no_coordinador",
+            )

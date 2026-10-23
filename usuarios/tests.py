@@ -157,6 +157,7 @@ class UsuariosCrudTests(APITestCase):
         self.assertEqual(r.data["cantidad_cursos"], 0)
 
     def test_crear_usuario_html_con_rol_y_password_hasheada(self):
+        self.client.login(username="coord", password=CLAVE)
         r = self.client.post("/panel/usuarios/nuevo/", {
             "username": "html", "first_name": "H", "last_name": "T", "email": "html@prueba.cl",
             "rut": "", "telefono": "", "rol": "COORDINADOR", "password1": "HtmlClave2026!", "password2": "HtmlClave2026!",
@@ -167,6 +168,90 @@ class UsuariosCrudTests(APITestCase):
         self.assertTrue(usuario.is_staff)
 
     def test_desactivar_html_no_borra_fila(self):
+        self.client.login(username="coord", password=CLAVE)
         r = self.client.post(f"/panel/usuarios/{self.estudiante.pk}/desactivar/")
         self.assertEqual(r.status_code, 302)
         self.assertTrue(Usuario.objects.filter(pk=self.estudiante.pk, is_active=False).exists())
+
+
+# ============================================================
+# SEGURIDAD DEL PANEL HTML
+# Lectura abierta; cualquier escritura exige sesión de coordinador.
+# Un visitante o un estudiante logueado son redirigidos al login y
+# NO se modifica nada (se comprueba contra la base de datos).
+# ============================================================
+class PanelSeguridadTests(APITestCase):
+    """Login/logout del panel y decorador solo_coordinador_para_escribir."""
+
+    def setUp(self):
+        self.coordinador = crear_usuario("coord", rol=Rol.COORDINADOR)
+        self.estudiante = crear_usuario("est")
+        self.curso = crear_curso()
+        self.datos_usuario = {
+            "username": "intruso", "first_name": "I", "last_name": "N", "email": "intruso@prueba.cl",
+            "rut": "", "telefono": "", "rol": "COORDINADOR", "password1": "Intruso2026!", "password2": "Intruso2026!",
+        }
+
+    def _escrituras(self):
+        """Un POST de cada app del panel: usuarios, cursos, carros y matrículas."""
+        return [
+            ("/panel/usuarios/nuevo/", self.datos_usuario),
+            (f"/panel/usuarios/{self.estudiante.pk}/desactivar/", {}),
+            (f"/panel/cursos/{self.curso.pk}/desactivar/", {}),
+            (f"/panel/areas/{self.curso.area.pk}/desactivar/", {}),
+            (f"/panel/carros/{self.estudiante.pk}/agregar/", {"curso": self.curso.pk}),
+            (f"/panel/carros/{self.estudiante.pk}/confirmar/", {}),
+            ("/panel/matriculas/1/estado/", {"estado": "CANCELADO"}),
+        ]
+
+    def _nada_cambio(self):
+        self.assertFalse(Usuario.objects.filter(username="intruso").exists())
+        self.assertTrue(Usuario.objects.get(pk=self.estudiante.pk).is_active)
+        self.assertTrue(Curso.objects.get(pk=self.curso.pk).activo)
+        self.assertFalse(CarroMatricula.objects.filter(estudiante=self.estudiante, items__isnull=False).exists())
+
+    def test_visitante_sin_sesion_es_redirigido_al_login(self):
+        for url, datos in self._escrituras():
+            with self.subTest(url=url):
+                r = self.client.post(url, datos)
+                self.assertEqual(r.status_code, 302)
+                self.assertTrue(r["Location"].startswith("/panel/login/?next="), r["Location"])
+        self._nada_cambio()
+
+    def test_estudiante_logueado_es_redirigido_al_login(self):
+        self.client.login(username="est", password=CLAVE)
+        for url, datos in self._escrituras():
+            with self.subTest(url=url):
+                r = self.client.post(url, datos)
+                self.assertEqual(r.status_code, 302)
+                self.assertTrue(r["Location"].startswith("/panel/login/?next="), r["Location"])
+        self._nada_cambio()
+
+    def test_coordinador_logueado_puede_escribir(self):
+        self.client.login(username="coord", password=CLAVE)
+        r = self.client.post("/panel/usuarios/nuevo/", self.datos_usuario)
+        self.assertEqual(r.status_code, 302)
+        self.assertNotIn("/login/", r["Location"])
+        self.assertTrue(Usuario.objects.filter(username="intruso").exists())
+
+    def test_lectura_sigue_abierta_sin_sesion(self):
+        for ruta in ["/panel/", "/panel/usuarios/", "/panel/cursos/", "/panel/carros/", "/panel/matriculas/",
+                     "/panel/usuarios/nuevo/"]:
+            with self.subTest(ruta=ruta):
+                self.assertEqual(self.client.get(ruta).status_code, 200)
+
+    def test_login_panel_solo_coordinador(self):
+        r = self.client.post("/panel/login/", {"username": "est", "password": CLAVE})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Solo el Coordinador Académico puede iniciar sesión")
+        self.assertNotIn("_auth_user_id", self.client.session)
+        r = self.client.post("/panel/login/", {"username": "coord", "password": CLAVE})
+        self.assertEqual(r.status_code, 302)
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_logout_solo_por_post(self):
+        self.client.login(username="coord", password=CLAVE)
+        self.assertEqual(self.client.get("/panel/logout/").status_code, 405)
+        self.assertIn("_auth_user_id", self.client.session)
+        self.assertEqual(self.client.post("/panel/logout/").status_code, 302)
+        self.assertNotIn("_auth_user_id", self.client.session)

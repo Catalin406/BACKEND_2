@@ -14,6 +14,7 @@ from django.urls import reverse
 from core.forms import estilizar_filtro
 from core.utilidades import cambiar_activo_con_confirmacion, filtrar_listado, obtener_o_redirigir, paginar
 from matriculas.models import Inscripcion
+from usuarios.permisos import solo_coordinador_para_escribir
 
 from .filtros import CursoFilter
 from .forms import AreaForm, CursoForm
@@ -82,6 +83,7 @@ def area_lista(request):
     })
 
 
+@solo_coordinador_para_escribir
 def area_crear(request):
     """Formulario de nueva área."""
     form = AreaForm(request.POST or None)
@@ -101,6 +103,7 @@ def area_detalle(request, pk):
     return render(request, "cursos/area_detalle.html", {"area": area, "cursos": cursos})
 
 
+@solo_coordinador_para_escribir
 def area_editar(request, pk):
     """Formulario de edición del área."""
     area, redireccion = obtener_o_redirigir(request, AreaConocimiento, pk=pk)
@@ -131,11 +134,13 @@ def _cambiar_area(request, pk, activar):
     )
 
 
+@solo_coordinador_para_escribir
 def area_desactivar(request, pk):
     """Baja lógica del área (activo=False)."""
     return _cambiar_area(request, pk, activar=False)
 
 
+@solo_coordinador_para_escribir
 def area_reactivar(request, pk):
     """Reactiva un área inactiva."""
     return _cambiar_area(request, pk, activar=True)
@@ -168,6 +173,7 @@ def _guardar_curso(request, form):
         return None
 
 
+@solo_coordinador_para_escribir
 def curso_crear(request):
     """Formulario de nuevo curso."""
     form = CursoForm(request.POST or None)
@@ -192,6 +198,7 @@ def curso_detalle(request, pk):
     return render(request, "cursos/curso_detalle.html", {"curso": curso, "inscripciones": inscripciones})
 
 
+@solo_coordinador_para_escribir
 def curso_editar(request, pk):
     """Formulario de edición del curso (ajusta cupos disponibles)."""
     curso, redireccion = obtener_o_redirigir(request, Curso, pk=pk)
@@ -223,11 +230,13 @@ def _cambiar_curso(request, pk, activar):
     )
 
 
+@solo_coordinador_para_escribir
 def curso_desactivar(request, pk):
     """Baja lógica del curso (activo=False)."""
     return _cambiar_curso(request, pk, activar=False)
 
 
+@solo_coordinador_para_escribir
 def curso_reactivar(request, pk):
     """Reactiva un curso inactivo."""
     return _cambiar_curso(request, pk, activar=True)

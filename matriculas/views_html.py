@@ -11,6 +11,8 @@ from core.excepciones import ErrorDeNegocio
 from core.forms import estilizar_filtro
 from core.utilidades import obtener_o_redirigir, paginar
 
+from usuarios.permisos import solo_coordinador_para_escribir
+
 from . import servicios
 from .filtros import InscripcionFilter, MatriculaFilter
 from .forms import CambioEstadoForm
@@ -57,6 +59,7 @@ def matricula_detalle(request, pk):
 # ============================================================
 # CAMBIO DE ESTADO (POST)
 # ============================================================
+@solo_coordinador_para_escribir
 def matricula_cambiar_estado(request, pk):
     """Marca completada o cancela (liberando cupos) una matrícula."""
     matricula, redireccion = obtener_o_redirigir(request, Matricula, pk=pk)
@@ -68,7 +71,7 @@ def matricula_cambiar_estado(request, pk):
             nuevo = form.cleaned_data["estado"]
             anterior = matricula.estado
             try:
-                servicios.cambiar_estado_matricula(matricula, nuevo, None, form.cleaned_data["observacion"])
+                servicios.cambiar_estado_matricula(matricula, nuevo, request.user, form.cleaned_data["observacion"])
                 texto = EstadoMatricula(nuevo).label
                 libero = nuevo == EstadoMatricula.CANCELADO and anterior == EstadoMatricula.PAGADO
                 extra = " Los cupos de sus cursos fueron liberados." if libero else ""

@@ -234,10 +234,11 @@ Sin token → **401**. Con token pero con otro rol → **403**. Errores en JSON 
 
 ---
 
-## Interfaz HTML (sin login)
+## Interfaz HTML (lectura abierta, escritura con login de Coordinador)
 
 | Ruta | Página |
 |---|---|
+| `/panel/login/`, `/panel/logout/` | Inicio y cierre de sesión (logout solo por POST). Solo entra el Coordinador (`coordinador` / `Coordinador2026!`) |
 | `/` | Portada con estadísticas reales y próximos cursos |
 | `/cursos/`, `/cursos/<id>/` | Oferta académica con los filtros de `CursoFilter` y detalle |
 | `/panel/` | Panel de gestión |
@@ -245,6 +246,8 @@ Sin token → **401**. Con token pero con otro rol → **403**. Errores en JSON 
 | `/panel/carros/?estudiante=<id>` | Carro persistido: agregar, quitar, vaciar y confirmar |
 | `/panel/matriculas/`, `/panel/inscripciones/` | Matrículas con historial y cambio de estado; inscripciones UUID |
 | `/documentacion/` | Guía del sistema |
+
+Ver cualquier página del panel es público (GET); crear, editar, desactivar, cambiar estados y confirmar matrículas (POST) exigen sesión de Coordinador: un visitante o un estudiante son redirigidos al login.
 
 Las rutas inexistentes (`/asdf`, `/api/xyz`, `/panel/cursos/999999/`, incluso `/static/noexiste.css` gracias al `runserver` propio de `core`) nunca muestran el 404 de Django: terminan en una pantalla que vuelve al inicio en 3 segundos. `/cursos` redirige a `/cursos/`.
 

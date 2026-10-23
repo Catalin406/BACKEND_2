@@ -119,9 +119,36 @@ Para cada indicador de la rúbrica: **dónde está** (archivo, clase o función 
 | Barra final (`/cursos` → `/cursos/`) con `resolve()` | `core/views.py:122`, `:131` |
 | `runserver` propio: `/static/` inexistente también va a la redirección | `core/management/commands/runserver.py` (`ManejadorEstaticosConRedireccion`); `core` primero en `INSTALLED_APPS` |
 | Helper `obtener_o_redirigir` (sin `get_object_or_404`) | `core/utilidades.py:21` |
-| Pruebas: 62, todas aprobadas | `*/tests.py` |
+| Pruebas: 69, todas aprobadas | `*/tests.py` |
 
 **Cómo explicarlo:** "Cada archivo empieza con un bloque que explica su responsabilidad. Los datos de la alumna nunca están escritos en las plantillas: llegan del `.env` mediante el context processor. Ninguna ruta muestra el 404: hay tres capas (catch-all, `handler404` y middleware), y las pruebas lo comprueban con más de 8 rutas absurdas. Como el servidor de desarrollo atiende `/static/` antes que las URLs, sobrescribí `runserver` con un manejador de estáticos propio que, si el archivo no existe, muestra la misma pantalla de redirección."
+
+---
+
+## 7. Por qué el panel ahora exige login para modificar
+
+| Qué | Dónde |
+|---|---|
+| Decorador `solo_coordinador_para_escribir` | `usuarios/permisos.py` (final del archivo) |
+| Login y logout del panel (`LoginView` / `LogoutView`) | `usuarios/urls.py` (`/panel/login/`, `/panel/logout/`) |
+| Formulario que rechaza a quien no es coordinador | `usuarios/forms.py` (`LoginPanelForm`) |
+| Plantilla de login | `templates/usuarios/login.html` |
+| Autor real en el historial | `matriculas/views_html.py` (`request.user`) y `carro/views_html.py` (`confirmar_matricula(..., autor=request.user)`) |
+| Pruebas | `usuarios/tests.py` (`PanelSeguridadTests`) |
+
+**Qué era el problema (IDOR / control de acceso roto).** Las vistas de `/panel/...` no preguntaban quién era el usuario. Bastaba conocer la URL, por ejemplo `POST /panel/usuarios/nuevo/`, para crear un usuario con rol COORDINADOR, o `POST /panel/cursos/3/desactivar/` para dar de baja un curso. Se le llama IDOR (referencia directa a objetos sin control de acceso) porque el sistema entregaba la acción solo por conocer el identificador o la ruta, sin comprobar permisos.
+
+**Por qué es grave en un sitio público.** El servidor ahora está en internet con un dominio HTTPS: cualquier persona o bot que encuentre las rutas puede escalar privilegios (hacerse coordinador), anular matrículas de otros estudiantes (liberando cupos) o desactivar toda la oferta. Además, el historial de matrículas registraba autor vacío, así que ni siquiera se podía saber quién lo hizo.
+
+**Cómo se corrigió.**
+1. Login del panel con la sesión de Django en `/panel/login/`. Solo entra el Coordinador Académico; si un estudiante pone su contraseña correcta, recibe el mensaje "Solo el Coordinador Académico puede iniciar sesión en el panel" y no queda con sesión.
+2. El decorador `solo_coordinador_para_escribir` deja pasar GET, HEAD y OPTIONS, y para cualquier otro método exige sesión activa con `is_staff` y rol COORDINADOR. Si no la hay, redirige al login con `?next=`. Se aplicó a las 17 vistas de escritura de áreas, cursos, usuarios, carros y matrículas.
+3. El logout es solo por POST (Django 5 lo exige), así que otra página no puede cerrar la sesión con un simple enlace.
+4. Donde se guardaba el autor de un cambio ahora se usa `request.user`, el coordinador real.
+
+**Por qué la lectura queda abierta.** La pauta del caso define lectura pública (ver oferta, cursos, matrículas) y escritura solo para el Coordinador Académico. El mismo criterio ya existía en la API con `EsCoordinadorOSoloLectura`; ahora el panel HTML lo respeta igual. Los formularios (GET) se pueden ver, pero guardarlos (POST) exige sesión.
+
+**Cómo explicarlo:** "El panel y la API aplican la misma regla: leer es público, escribir es del coordinador. La API lo hace con JWT y el panel con sesión y un decorador. Las pruebas comprueban que un visitante y un estudiante logueado reciben una redirección al login y que no cambia nada en la base de datos."
 
 ---
 

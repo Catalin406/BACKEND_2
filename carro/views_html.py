@@ -15,6 +15,7 @@ from core.excepciones import ErrorDeNegocio
 from core.utilidades import obtener_o_redirigir
 from matriculas import servicios as servicios_matricula
 from usuarios.models import Rol, Usuario
+from usuarios.permisos import solo_coordinador_para_escribir
 
 from . import servicios
 from .forms import AgregarCursoCarroForm, SeleccionEstudianteForm
@@ -61,6 +62,7 @@ def carro_panel(request):
 # ============================================================
 # ACCIONES SOBRE EL CARRO (SOLO POST)
 # ============================================================
+@solo_coordinador_para_escribir
 def carro_agregar(request, estudiante_id):
     """Agrega un curso; muestra el error si ya estaba o no hay cupos."""
     estudiante, redireccion = _obtener_estudiante(request, estudiante_id)
@@ -79,6 +81,7 @@ def carro_agregar(request, estudiante_id):
     return redirect(_url_carro(estudiante.pk))
 
 
+@solo_coordinador_para_escribir
 def carro_quitar(request, estudiante_id, curso_id):
     """Quita un curso del carro (baja lógica del ítem)."""
     estudiante, redireccion = _obtener_estudiante(request, estudiante_id)
@@ -93,6 +96,7 @@ def carro_quitar(request, estudiante_id, curso_id):
     return redirect(_url_carro(estudiante.pk))
 
 
+@solo_coordinador_para_escribir
 def carro_vaciar(request, estudiante_id):
     """Vacía el carro completo."""
     estudiante, redireccion = _obtener_estudiante(request, estudiante_id)
@@ -104,6 +108,7 @@ def carro_vaciar(request, estudiante_id):
     return redirect(_url_carro(estudiante.pk))
 
 
+@solo_coordinador_para_escribir
 def carro_confirmar(request, estudiante_id):
     """Confirma la matrícula (pago simulado) con control de cupos."""
     estudiante, redireccion = _obtener_estudiante(request, estudiante_id)
@@ -112,7 +117,9 @@ def carro_confirmar(request, estudiante_id):
     if request.method != "POST":
         return redirect(_url_carro(estudiante.pk))
     try:
-        matricula = servicios_matricula.confirmar_matricula(estudiante)
+        matricula = servicios_matricula.confirmar_matricula(
+            estudiante, autor=request.user, observacion_pago="Confirmada desde el panel por el coordinador."
+        )
     except ErrorDeNegocio as error:
         messages.error(request, error.mensaje)
         return redirect(_url_carro(estudiante.pk))

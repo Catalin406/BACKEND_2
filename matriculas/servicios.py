@@ -106,8 +106,13 @@ def _resumen_curso(curso):
 # excepción y PostgreSQL revierte todo: no queda matrícula, ningún
 # cupo cambia y el carro queda intacto.
 # ============================================================
-def confirmar_matricula(estudiante):
-    """Convierte el carro del estudiante en una matrícula PAGADA con inscripciones."""
+def confirmar_matricula(estudiante, autor=None, observacion_pago="Pago aprobado (simulado)."):
+    """Convierte el carro del estudiante en una matrícula PAGADA con inscripciones.
+
+    'autor' es quien queda registrado en el historial (por defecto el propio
+    estudiante, como en la API; en el panel es el coordinador con sesión).
+    """
+    autor = autor or estudiante
     with transaction.atomic():
         # ------------------------------------------------------------
         # 1) Bloqueo del carro: evita dos confirmaciones simultáneas
@@ -158,7 +163,7 @@ def confirmar_matricula(estudiante):
         # 4) Matrícula PENDIENTE + detalles con el costo congelado.
         # ------------------------------------------------------------
         matricula = Matricula.objects.create(estudiante=estudiante)
-        _registrar_historial(matricula, None, EstadoMatricula.PENDIENTE, estudiante, "Matrícula creada desde el carro.")
+        _registrar_historial(matricula, None, EstadoMatricula.PENDIENTE, autor, "Matrícula creada desde el carro.")
         detalles = DetalleMatricula.objects.bulk_create(
             [DetalleMatricula(matricula=matricula, curso=c, costo_matricula=c.costo_matricula) for c in cursos]
         )
@@ -173,7 +178,7 @@ def confirmar_matricula(estudiante):
         matricula.pagada_en = timezone.now()
         matricula.save(update_fields=["estado", "pagada_en", "actualizada_en"])
         _registrar_historial(
-            matricula, EstadoMatricula.PENDIENTE, EstadoMatricula.PAGADO, estudiante, "Pago aprobado (simulado)."
+            matricula, EstadoMatricula.PENDIENTE, EstadoMatricula.PAGADO, autor, observacion_pago
         )
 
         # ------------------------------------------------------------

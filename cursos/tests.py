@@ -9,7 +9,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from rest_framework.test import APITestCase
 
-from core.fabricas import autenticar, crear_area, crear_curso, crear_usuario
+from core.fabricas import CLAVE, autenticar, crear_area, crear_curso, crear_usuario
 from cursos.models import AreaConocimiento, Curso, TipoCurso
 from usuarios.models import Rol
 
@@ -124,7 +124,11 @@ class ValidacionesCursoTests(APITestCase):
 
 
 class CursosHtmlTests(APITestCase):
-    """CRUD HTML de áreas y cursos con baja lógica."""
+    """CRUD HTML de áreas y cursos con baja lógica (requiere sesión de coordinador)."""
+
+    def setUp(self):
+        crear_usuario("coord", rol=Rol.COORDINADOR)
+        self.client.login(username="coord", password=CLAVE)
 
     def test_crear_curso_html_y_desactivar_sin_borrar(self):
         area = crear_area()

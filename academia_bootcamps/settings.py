@@ -121,6 +121,13 @@ DATABASES = {
 # ============================================================
 AUTH_USER_MODEL = "usuarios.Usuario"
 
+# ------------------------------------------------------------
+# Sesión del panel HTML (la API sigue usando JWT)
+# ------------------------------------------------------------
+LOGIN_URL = "panel_login"
+LOGIN_REDIRECT_URL = "panel"
+LOGOUT_REDIRECT_URL = "inicio"
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},

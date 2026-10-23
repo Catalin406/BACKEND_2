@@ -15,7 +15,7 @@ from rest_framework.test import APITestCase
 from carro import servicios as servicios_carro
 from carro.models import ItemCarroMatricula
 from core.excepciones import ErrorDeNegocio
-from core.fabricas import autenticar, crear_curso, crear_usuario
+from core.fabricas import CLAVE, autenticar, crear_curso, crear_usuario
 from cursos.models import Curso
 from matriculas import servicios
 from matriculas.models import EstadoMatricula, HistorialEstadoMatricula, Inscripcion, Matricula
@@ -126,10 +126,14 @@ class CambioEstadoTests(APITestCase):
         self.assertEqual(r.data["count"], 1)
 
     def test_cancelar_desde_html(self):
+        self.client.login(username="coord", password=CLAVE)
         r = self.client.post(f"/panel/matriculas/{self.matricula.pk}/estado/", {"estado": "CANCELADO"}, follow=True)
         self.assertContains(r, "Los cupos de sus cursos fueron liberados")
         self.curso.refresh_from_db()
         self.assertEqual(self.curso.cupos_disponibles, 2)
+        self.assertTrue(HistorialEstadoMatricula.objects.filter(
+            matricula=self.matricula, estado_nuevo="CANCELADO", cambiado_por=self.coordinador
+        ).exists())
 
 
 class ConfirmacionHtmlTests(APITestCase):
@@ -137,12 +141,24 @@ class ConfirmacionHtmlTests(APITestCase):
 
     def test_sin_cupo_html_muestra_mensaje(self):
         estudiante = crear_usuario("est")
+        crear_usuario("coord", rol=Rol.COORDINADOR)
+        self.client.login(username="coord", password=CLAVE)
         curso = crear_curso(titulo="Taller Agotado", cupos=1)
         servicios_carro.agregar_curso(estudiante, curso)
         Curso.objects.filter(pk=curso.pk).update(cupos_disponibles=0)
         r = self.client.post(f"/panel/carros/{estudiante.pk}/confirmar/", follow=True)
         self.assertContains(r, "No hay cupos disponibles en: «Taller Agotado»")
         self.assertFalse(Matricula.objects.exists())
+
+    def test_confirmar_desde_panel_registra_al_coordinador_como_autor(self):
+        estudiante = crear_usuario("est")
+        coordinador = crear_usuario("coord", rol=Rol.COORDINADOR)
+        self.client.login(username="coord", password=CLAVE)
+        servicios_carro.agregar_curso(estudiante, crear_curso(cupos=2))
+        self.client.post(f"/panel/carros/{estudiante.pk}/confirmar/")
+        pagado = HistorialEstadoMatricula.objects.get(estado_nuevo="PAGADO")
+        self.assertEqual(pagado.cambiado_por, coordinador)
+        self.assertEqual(pagado.observacion, "Confirmada desde el panel por el coordinador.")
 
 
 class ConcurrenciaTests(TransactionTestCase):

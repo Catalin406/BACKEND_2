@@ -7,8 +7,9 @@
 from rest_framework.test import APITestCase
 
 from carro.models import CarroMatricula, ItemCarroMatricula
-from core.fabricas import autenticar, crear_curso, crear_usuario
+from core.fabricas import CLAVE, autenticar, crear_curso, crear_usuario
 from cursos.models import Curso
+from usuarios.models import Rol
 
 
 class CarroApiTests(APITestCase):
@@ -79,6 +80,8 @@ class CarroHtmlTests(APITestCase):
     def setUp(self):
         self.estudiante = crear_usuario("est")
         self.curso = crear_curso(cupos=2)
+        crear_usuario("coord", rol=Rol.COORDINADOR)
+        self.client.login(username="coord", password=CLAVE)
 
     def test_agregar_duplicado_muestra_error(self):
         url = f"/panel/carros/{self.estudiante.pk}/agregar/"
